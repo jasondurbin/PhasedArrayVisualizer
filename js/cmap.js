@@ -6,17 +6,30 @@ export const Colormaps = [
     'inferno_r',
     'rainbow_r',
 ]
+/**
+ * @callback Colormapper
+ * @param {number} val - Value for colormap. Will be bound [0, 1].
+ *
+ * @return {string} Color as `rgb()` string.
+ */
 
-export function find_colormap(key) {
+/**
+ * Find and return colormap based on input `name`.
+ *
+ * @param {string} name
+ *
+ * @return {Colormapper}
+ * */
+export function find_colormap(name) {
     let colors;
-    if (key == 'viridis') colors = viridisColors;
-    else if (key == 'viridis_r') colors = [...viridisColors].reverse();
-    else if (key == 'inferno') colors = infernoColors;
-    else if (key == 'inferno_r') colors = [...infernoColors].reverse();
-    else if (key == 'rainbow') return _rainbow_cmap;
-    else if (key == 'rainbow_r') return _rainbow_cmap_r;
+    if (name == 'viridis') colors = viridisColors;
+    else if (name == 'viridis_r') colors = [...viridisColors].reverse();
+    else if (name == 'inferno') colors = infernoColors;
+    else if (name == 'inferno_r') colors = [...infernoColors].reverse();
+    else if (name == 'rainbow') return _rainbow_cmap;
+    else if (name == 'rainbow_r') return _rainbow_cmap_r;
 
-    function colormap(value){
+    function colormapper(value){
         if (isNaN(value)) return `rgb(0,0,0)`
         let v = Math.max(0, Math.min(1, value));
         let i = v * (colors.length - 1);
@@ -28,7 +41,7 @@ export function find_colormap(key) {
         let scale = (o) => {return Math.round((c1[o] + f*(c2[o] - c1[o]))*255);}
         return `rgb(${scale(0)},${scale(1)},${scale(2)})`;
     }
-    return colormap;
+    return colormapper;
 }
 
 function _rainbow_cmap(value) {

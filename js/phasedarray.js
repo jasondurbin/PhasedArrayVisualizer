@@ -1,12 +1,3 @@
-import {Geometry} from "./geometry.js";
-/**	 *
- * Return a palette key item color as a callable.
- *
- * This is useful for dynamic objects that can call this function
- * periodically to get their color.
- *
- * @param {Geometry} geometry - Data color palette key.
- * */
 export class PhasedArray {
     constructor(geometry) {
         this.geometry = geometry;

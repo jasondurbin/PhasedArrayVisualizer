@@ -1,5 +1,5 @@
 import {PhasedArray} from "./phasedarray.js";
-import {Geometries, initialize_geometry_scene} from "./geometry.js";
+import {initialize_geometry_scene} from "./geometry.js";
 import {Farfield} from "./farfield.js";
 import {Colormaps, find_colormap} from "./cmap.js";
 
@@ -22,11 +22,6 @@ export const Required_Selectors = [
 
 /**	 *
  * Create scene for Phased Array simulator.
- *
- * This requires the following HTML tags with IDs (w/o prepend):
- *
- * ID           TAG             DESCRIPTION
- * -geometry    select          Dropdown that will populate geometry selections.
  *
  * @param {string} prepend - Prepend used on HTML IDs.
  * */
@@ -101,9 +96,9 @@ export class Scene {
         let find_entry = () => {
             if (this.pa.geometry.updateWaiting) return 0;
             if (this.pa.updateWaiting) return 0;
-            if (this._cmChanged['geometry-phase-colormap']) return 4;
-            if (this._cmChanged['geometry-magnitude-colormap']) return 5;
             if (this.ff.updateWaiting) return 6;
+            if (this._cmChanged['geometry-phase-colormap']) return 24;
+            if (this._cmChanged['geometry-magnitude-colormap']) return 25;
             if (this._cmChanged['farfield-colormap']) return 10;
         }
         let ns = find_entry();
@@ -145,7 +140,7 @@ export class Scene {
             this.log("Scaling coefficients...")
             this._waiting = () => {this.pa.rescale_coefficients()};
         }
-        else if (this.state == 4){
+        else if (this.state == 4 || this.state == 24){
             this.log("Drawing phase...")
             this._waiting = () => {
                 this.pa.geometry.draw(
@@ -156,7 +151,7 @@ export class Scene {
                 this._cmChanged['geometry-phase-colormap'] = false;
             };
         }
-        else if (this.state == 5){
+        else if (this.state == 5 || this.state == 25){
             this.log("Drawing attenuation...")
             this._waiting = () => {
                 this.pa.geometry.draw(
@@ -216,7 +211,7 @@ export class Scene {
                 this.ff.draw_polar(this.selectors['farfield-canvas']);
             };
         }
-        else if (this.state == 12){
+        else if (this.state == 12 || this.state == 26){
             this.log();
             this.state++;
         }

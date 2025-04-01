@@ -1,0 +1,227 @@
+
+:root {
+    --bg-color-dark: #121212;
+    --text-color-dark: #AAA;
+    --canvas-border-color-dark: #000;
+    --settings-border-color-dark: #666666;
+    --settings-bg-color-dark: #121244;
+    --input-bg-color-dark: #333333;
+    --input-border-color-dark: #333333;
+    --link-color-dark: #AAF;
+    --theme-bg-color-dark: #444;
+    --theme-color-dark: #EEE;
+    --shadow-dark: #000;
+
+    --bg-color-light: #FFFFFF;
+    --text-color-light: #333;
+    --input-bg-color-light: #FFFFFF;
+    --input-border-color-light: #cccccc;
+    --canvas-border-color-light: #222;
+    --settings-border-color-light: #666666;
+    --settings-bg-color-light: #EEF;
+    --link-color-light: #33F;
+    --theme-bg-color-light: #EEE;
+    --theme-color-light: #333;
+    --shadow-light: #0003;
+}
+:root.dark {
+    --bg-color: var(--bg-color-dark);
+    --text-color: var(--text-color-dark);
+    --input-bg-color: var(--input-bg-color-dark);
+    --input-border-color: var(--input-border-color-dark);
+    --canvas-border-color: var(--canvas-border-color-dark);
+    --settings-border-color: var(--settings-border-color-dark);
+    --settings-bg-color: var(--settings-bg-color-dark);
+    --link-color: var(--link-color-dark);
+    --theme-bg-color: var(--theme-bg-color-dark);
+    --theme-color: var(--theme-color-dark);
+    --shadow: var(--shadow-dark);
+}
+:root.light {
+    --bg-color: var(--bg-color-light);
+    --text-color: var(--text-color-light);
+    --input-bg-color: var(--input-bg-color-light);
+    --input-border-color: var(--input-border-color-light);
+    --canvas-border-color: var(--canvas-border-color-light);
+    --settings-border-color: var(--settings-border-color-light);
+    --settings-bg-color: var(--settings-bg-color-light);
+    --link-color: var(--link-color-light);
+    --theme-bg-color: var(--theme-bg-color-light);
+    --theme-color: var(--theme-color-light);
+    --shadow: var(--shadow-light);
+}
+@media (prefers-color-scheme: dark) {
+    :root.auto {
+        --bg-color: var(--bg-color-dark);
+        --text-color: var(--text-color-dark);
+        --input-bg-color: var(--input-bg-color-dark);
+        --input-border-color: var(--input-border-color-dark);
+        --canvas-border-color: var(--canvas-border-color-dark);
+        --settings-border-color: var(--settings-border-color-dark);
+        --settings-bg-color: var(--settings-bg-color-dark);
+        --link-color: var(--link-color-dark);
+        --theme-bg-color: var(--theme-bg-color-dark);
+        --theme-color: var(--theme-color-dark);
+        --shadow: var(--shadow-dark);
+    }
+}
+@media (prefers-color-scheme: light) {
+    :root.auto {
+        --bg-color: var(--bg-color-light);
+        --text-color: var(--text-color-light);
+        --input-bg-color: var(--input-bg-color-light);
+        --input-border-color: var(--input-border-color-light);
+        --canvas-border-color: var(--canvas-border-color-light);
+        --settings-border-color: var(--settings-border-color-light);
+        --settings-bg-color: var(--settings-bg-color-light);
+        --link-color: var(--link-color-light);
+        --theme-bg-color: var(--theme-bg-color-light);
+        --theme-color: var(--theme-color-light);
+        --shadow: var(--shadow-light);
+    }
+}
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+    margin: 0px;
+    transition: 0.3s;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+a:hover{
+    text-decoration: underline;
+}
+.theme-toggle {
+    background-color: var(--theme-bg-color);
+    color: var(--theme-color);
+    padding: 5px;
+    border-radius: 5px;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: default;
+    border: none;
+}
+.theme-toggle:hover{
+    transition: 0.3s;
+    box-shadow:3px 3px var(--shadow);
+}
+input,
+textarea,
+select {
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--input-border-color);
+    padding: 4px;
+    transition: 0.3s;
+}
+#pa-refresh{
+    width: 200px;
+    height: 40px;
+}
+#pa-progress {
+    width: 200px;
+    display: block;
+}
+#pa-status{
+    font-size: 0.9em;
+    width: 200px;
+    text-align: center;
+}
+.pa-update-div {
+    width: 200px;
+    margin: auto;
+}
+.text-group {
+    font-size: 16px;
+    margin: 0px 0;
+    width: 100%;
+}
+.main-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    width: 100%;
+}
+.pa-settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    width: 100%;
+    margin: 5px 0 5px 0;
+}
+.pa-settings h3{
+    margin: 4px;
+}
+.pa-settings > div {
+    background-color: var(--settings-bg-color);
+    padding: 10px;
+    border: 1px solid var(--settings-border-color);
+    min-width: 170px;
+    border-radius: 5px;
+}
+.form-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+}
+.form-group label{
+    flex-grow: 1;
+}
+.canvas-container {
+    width: 30%;
+    display: block;
+    text-align: center;
+}
+.canvas-container h2 {
+    margin: 0;
+}
+.canvas-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 100%;
+    box-sizing: border-box;
+}
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--canvas-border-color);
+    box-shadow:3px 3px var(--shadow);
+    box-sizing: border-box;
+}
+.canvas-header {
+    margin: 10px 0;
+}
+.canvas-footer {
+    margin: 10px 0;
+    text-align: right;
+}
+@media (max-width: 1024px) {
+    .main-container { flex-wrap: wrap; }
+    .canvas-container { width: 45%; }
+    .canvas-container:nth-child(3) { width: 90%; }
+}
+@media (max-width: 600px) {
+    .main-container {
+        flex-direction: column;
+        gap: 0px;
+    }
+    .canvas-container {
+        box-sizing: border-box;
+        width: 100%;
+    }
+    .canvas-container:nth-child(3) { width: 100%; }
+}

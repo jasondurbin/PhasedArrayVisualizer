@@ -52,20 +52,11 @@ export class Scene {
         this.selectors['refresh'].addEventListener('click', () => {
             this.start_state_machine();
         });
-        this.canvasScale = 100.0;
         this.reset_phased_array();
         this.ff = Farfield.from_scene(this);
         this.channel = new MessageChannel();
         this.state = null;
         this.channel.port1.onmessage = () => {this.state_machine()};
-
-        ['geometry-phase-canvas', 'geometry-magnitude-canvas', 'farfield-canvas'].forEach((x) => {
-            let canvas = this.selectors[x];
-            let size = Math.min(canvas.width, canvas.height);
-            const ctx = canvas.getContext('2d');
-            ctx.canvas.width = size*this.canvasScale;
-            ctx.canvas.height = size*this.canvasScale;
-        });
     }
     reset_phased_array(){
         this.pa = PhasedArray.from_scene(this);
@@ -86,9 +77,10 @@ export class Scene {
         }
     }
     log(string){
-        if (string !== undefined) console.log(string)
-        if (string === undefined) string = "Complete"
-        this.selectors['status'].innerHTML = string;
+        if (string !== undefined) {
+            console.log(string)
+            this.selectors['status'].innerHTML = string;
+        }
     }
     start_state_machine() {
         let os = this.state;
@@ -104,7 +96,7 @@ export class Scene {
         let ns = find_entry();
         if (ns === undefined) this.state = os;
         else this.state = ns;
-        this._waiting = null;
+        this._queue = null;
         console.log("Entry:", this.state, ns, os);
         if (os === null && ns !== undefined){
             console.log("Entry:", this.state);
@@ -112,12 +104,16 @@ export class Scene {
             this.selectors['progress'].value = 0;
         }
     }
+    append_queue(text, func){
+        this.log(text);
+        this._queue = func;
+    }
     state_machine() {
         let updateProgress = true;
-        if (this._waiting !== null){
-            this._waiting();
+        if (this._queue !== null){
+            this._queue();
             this.state++;
-            this._waiting = null;
+            this._queue = null;
         }
         else if (this.state == 0) {
             this.log("Resetting...");
@@ -125,59 +121,59 @@ export class Scene {
             this.state++;
         }
         else if (this.state == 1){
-            this._waiting = () => {
-                if (this.pa.geometry.updateWaiting){
-                    this.log("Regenerating array...")
+            if (this.pa.geometry.updateWaiting){
+                this.append_queue("Regenerating array...", () => {
                     this.pa.geometry.generate()
-                }
-            };
+                });
+            }
+            else this.state++;
         }
         else if (this.state == 2){
-            this.log("Creating coefficients...")
-            this._waiting = () => {this.pa.generate()};
+            this.append_queue("Creating coefficients...", () => {
+                this.pa.generate()
+            });
         }
         else if (this.state == 3){
-            this.log("Scaling coefficients...")
-            this._waiting = () => {this.pa.rescale_coefficients()};
+            this.append_queue("Scaling coefficients...", () => {
+                this.pa.rescale_coefficients()
+            });
         }
         else if (this.state == 4 || this.state == 24){
-            this.log("Drawing phase...")
-            this._waiting = () => {
+            this.append_queue("Drawing phase...", () => {
                 this.pa.geometry.draw(
                     this.selectors['geometry-phase-canvas'],
                     this.pa.vectorPhaseScale,
                     this.selected_colormap('geometry-phase-colormap'),
                 )
                 this._cmChanged['geometry-phase-colormap'] = false;
-            };
+            });
         }
         else if (this.state == 5 || this.state == 25){
-            this.log("Drawing attenuation...")
-            this._waiting = () => {
+            this.append_queue("Drawing attenuation...", () => {
                 this.pa.geometry.draw(
                     this.selectors['geometry-magnitude-canvas'],
                     this.pa.vectorAttenScaled,
                     this.selected_colormap('geometry-magnitude-colormap'),
                 )
                 this._cmChanged['geometry-magnitude-colormap'] = false;
-            };
+            });
         }
         else if (this.state == 6){
             if (this.ff.updateWaiting){
-                this.log("Resetting farfield mesh...");
-                this._waiting = () => { this.ff.generate();};
+                this.append_queue("Resetting farfield mesh...", () => {
+                    this.ff.generate();
+                });
             }
             else this.state++;
         }
         else if (this.state == 7){
-            this.log("Calculating farfield...");
-            this._waiting = () => {
+            this.append_queue("Calculating farfield...", () => {
                 this._looper = this.ff.create_calculator_loop(
                     this,
                     this.selectors['progress'],
                     this.selectors['status']
                 );
-            };
+            });
         }
         else if (this.state == 8){
             const v = this._looper();
@@ -190,29 +186,26 @@ export class Scene {
         else if (this.state == 9){
             const ele = this.selectors['directivity-max'];
             if (ele !== null){
-                this.log("Calculating directivity...");
-                this._waiting = () => {
+                this.append_queue("Calculating directivity...", () => {
                     let d = this.ff.compute_directivity();
                     this.selectors['directivity-max'].innerHTML = `Directivity: ${(10*Math.log10(d)).toFixed(2)} dB`;
-                };
+                });
             }
             else this.state++;
         }
         else if (this.state == 10){
-            this.log("Building colormap...");
-            this._waiting = () => {
+            this.append_queue("Building colormap...", () => {
                 this.ff.create_colormap(this.selected_colormap('farfield-colormap'));
                 this._cmChanged['farfield-colormap'] = false;
-            }
+            });
         }
         else if (this.state == 11){
-            this.log("Drawing farfield...");
-            this._waiting = () => {
+            this.append_queue("Drawing farfield...", () => {
                 this.ff.draw_polar(this.selectors['farfield-canvas']);
-            };
+            });
         }
         else if (this.state == 12 || this.state == 26){
-            this.log();
+            this.log("Complete");
             this.state++;
         }
         else this.state = null;

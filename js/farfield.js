@@ -7,6 +7,11 @@ export class Farfield {
     get maxLoop(){return self.phiPoints;}
 
     set_points(thetaPoints, phiPoints) {
+        thetaPoints = Number(thetaPoints)
+        phiPoints = Number(phiPoints)
+        // ensure samples are even
+        if (thetaPoints % 2 == 0) thetaPoints++;
+        if (phiPoints % 2 == 0) phiPoints++;
         this.thetaPoints = thetaPoints;
         this.phiPoints = phiPoints;
         this.updateWaiting = true;

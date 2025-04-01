@@ -44,6 +44,21 @@
             });
         });
     </script>
+    <!-- Matomo -->
+    <script>
+        var _paq = window._paq = window._paq || [];
+        /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+        _paq.push(['trackPageView']);
+        _paq.push(['enableLinkTracking']);
+        (function() {
+            var u="//webanalytics.neonphysics.com/matomo/";
+            _paq.push(['setTrackerUrl', u+'matomo.php']);
+            _paq.push(['setSiteId', '2']);
+            var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+            g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+        })();
+    </script>
+    <!-- End Matomo Code -->
 </head>
 <body class="auto">
     <div class="text-group" style="text-align:center;">
@@ -147,7 +162,7 @@
         <p>This tool allows you to change a phased array's geometry, element spacing, and steering position.</p>
         <p>This demo was created by <a href="http://jasonleodurbin.com" target="_blank">Jason Durbin</a>. The final implementation will be hosted on <a href='https://neonphysics.com' target='_blank'>neonphysics.com</a>.
         <h2>Notes</h2>
-        <p>The provided directivity calculation assumes half-hemisphere radiation (+ 3 dB).</p>
+        <p>The provided directivity calculation assumes half-hemisphere radiation (+3 dB).</p>
         <p>The farfield mesh can be made finer by changing 'Theta Points' and 'Phi Points'.</p>
         <h2>Attributions</h2>
         <p>Colormaps are generated to match <a href='https://matplotlib.org/stable/users/explain/colors/colormaps.html' target="_blank">matplotlib's</a>.</p>

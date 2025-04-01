@@ -340,8 +340,8 @@ export class CircularGeometry extends Geometry {
     }
     static activate(scene) {
         super.activate(scene);
-        super.show_element(scene, 'min-ring', 'Ring Start');
-        super.show_element(scene, 'max-ring', 'Ring End');
+        super.show_element(scene, 'min-ring', 'Start Ring');
+        super.show_element(scene, 'max-ring', 'Stop Ring');
     };
 }
 
@@ -408,8 +408,8 @@ export class SunflowerGeometry extends Geometry {
     }
     static activate(scene) {
         super.activate(scene);
-        super.show_element(scene, 'min-ring', 'Ring Start');
-        super.show_element(scene, 'max-ring', 'Ring End');
+        super.show_element(scene, 'min-ring', 'Start Ring');
+        super.show_element(scene, 'max-ring', 'Stop Ring');
     };
 }
 export const Geometries = [

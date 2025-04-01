@@ -182,6 +182,8 @@ export class Farfield {
         const ctx = canvas.getContext('2d');
         console.log("Drawing...");
         ctx.reset();
+        canvas.width = 7000;
+        canvas.height = 7000;
         const thetaStep = Math.PI/(this.thetaPoints - 1);
         const phiStep = Math.PI/(this.phiPoints - 1);
         const r = Math.min(canvas.width/2, canvas.height/2);

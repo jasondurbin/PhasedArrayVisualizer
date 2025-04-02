@@ -1,4 +1,4 @@
-export class StateMachineQueue{
+export class SceneQueue{
     constructor(progressElement, statusElement){
         this.progress = progressElement;
         this.status = statusElement;

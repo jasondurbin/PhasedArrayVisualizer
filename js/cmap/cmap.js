@@ -6,8 +6,8 @@ export const Colormaps = [
     'inferno_r',
     'rainbow_r',
 ]
-export class ColormapControl {
-    constructor(selector, defaultSelection) {
+export class ColormapControl{
+    constructor(selector, defaultSelection){
         this.changed = true;
         this.selector = selector;
         if (defaultSelection === undefined) defaultSelection = 'viridis';
@@ -23,7 +23,7 @@ export class ColormapControl {
             this.changed = true;
         });
     }
-    cmap() {
+    cmap(){
         for (let i = 0; i < Colormaps.length; i++)
             if (this.selector[i].selected)
                 return find_colormap(Colormaps[i]);
@@ -44,7 +44,7 @@ export class ColormapControl {
  *
  * @return {Colormapper}
  * */
-export function find_colormap(name) {
+export function find_colormap(name){
     let colors;
     if (name == 'viridis') colors = viridisColors;
     else if (name == 'viridis_r') colors = [...viridisColors].reverse();
@@ -68,7 +68,7 @@ export function find_colormap(name) {
     return colormapper;
 }
 
-function _rainbow_cmap(value) {
+function _rainbow_cmap(value){
     if (isNaN(value)) return `rgb(0,0,0)`
     let v = Math.max(0, Math.min(1, value));
     const r = Math.round(255 * Math.max(0, Math.min(1, 1.5 - 4 * Math.abs(v - 0.75))));
@@ -77,7 +77,7 @@ function _rainbow_cmap(value) {
     return `rgb(${r},${g},${b})`;
 }
 
-function _rainbow_cmap_r(value) {
+function _rainbow_cmap_r(value){
     if (isNaN(value)) return `rgb(0,0,0)`
     let v = 1-Math.max(0, Math.min(1, value));
     const r = Math.round(255 * Math.max(0, Math.min(1, 1.5 - 4 * Math.abs(v - 0.75))));

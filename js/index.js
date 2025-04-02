@@ -1,16 +1,21 @@
-import {SceneControlPhasedArray, SceneControlGeometry, SceneControlFarfield} from "./scene-controls.js";
-import {SceneParent} from "./abc.js"
-import {StateMachineQueue} from "./scene-enum.js";
+import {SceneControlPhasedArray, SceneControlGeometry, SceneControlFarfield} from "./index-scenes.js";
+import {SceneParent} from "./scene/scene-abc.js"
+import {SceneQueue} from "./scene/scene-queue.js";
+
+window.addEventListener('load', () => {
+    const scene = new PhasedArrayScene('pa');
+    scene.build_state_machine();
+});
 
 /**	 *
  * Create scene for Phased Array simulator.
  *
  * @param {string} prepend - Prepend used on HTML IDs.
  * */
-export class Scene extends SceneParent{
+export class PhasedArrayScene extends SceneParent{
     constructor(prepend){
         super(prepend, ['refresh'])
-        this.queue = new StateMachineQueue(this.find_element('progress'), this.find_element('status'));
+        this.queue = new SceneQueue(this.find_element('progress'), this.find_element('status'));
         this.geometryControl = new SceneControlGeometry(this);
         this.arrayControl = new SceneControlPhasedArray(this);
         this.farfieldControl = new SceneControlFarfield(this);

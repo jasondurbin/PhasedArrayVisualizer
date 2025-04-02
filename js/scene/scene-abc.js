@@ -1,5 +1,5 @@
 
-import {ColormapControl} from "./cmap.js";
+import {ColormapControl} from "../cmap/cmap.js";
 
 export class SceneParent{
     constructor(prepend, controls){

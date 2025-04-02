@@ -14,36 +14,9 @@
     <meta property="og:title" content="Phased Array Visualizer" />
     <meta property="og:description" content="Phased array visualizer by Jason Durbin." />
     <meta property="og:image" content="./assets/favicon.png" />
+    <script type="module" src="./js/index.js" defer></script>
+    <script src="./js/theme.js"></script>
 
-    <script type="module">
-        import {Scene} from "./js/main.js";
-        import {find_colormap} from "./js/cmap.js";
-        window.addEventListener('load', (e) => {
-            const scene = new Scene('pa');
-            scene.build_state_machine();
-            const ttg = document.querySelector('.theme-toggle');
-            ttg.addEventListener('click', () => {
-                if (ttg.innerHTML.includes('dark')) {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.classList.remove('auto');
-                    document.documentElement.classList.add('light');
-                    ttg.innerHTML = 'light';
-                }
-                else if (ttg.innerHTML.includes('light')) {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.classList.add('auto');
-                    document.documentElement.classList.remove('light');
-                    ttg.innerHTML = 'auto';
-                }
-                else {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.classList.remove('auto');
-                    document.documentElement.classList.remove('light');
-                    ttg.innerHTML = 'dark';
-                }
-            });
-        });
-    </script>
     <!-- Matomo -->
     <!--
     <script>

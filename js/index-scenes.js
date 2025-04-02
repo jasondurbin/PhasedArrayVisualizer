@@ -1,7 +1,7 @@
-import {SceneControl, SceneControlWithSelector} from "./abc.js";
-import {Geometries} from "./geometry.js";
-import {PhasedArray} from "./phasedarray.js";
-import {FarfieldSpherical} from "./farfield.js"
+import {SceneControl, SceneControlWithSelector} from "./scene/scene-abc.js";
+import {Geometries} from "./phasedarray/geometry.js";
+import {PhasedArray} from "./phasedarray/phasedarray.js";
+import {FarfieldSpherical} from "./phasedarray/farfield.js"
 
 export class SceneControlGeometry extends SceneControlWithSelector{
     constructor(parent){

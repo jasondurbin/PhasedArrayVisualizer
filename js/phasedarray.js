@@ -1,3 +1,18 @@
+
+export function create_phased_array_scene(scene){
+    const geo = scene.selected_geometry().from_scene(scene);
+    const pa = new PhasedArray(geo);
+    const selTheta = scene.selectors['theta'];
+    const selPhi = scene.selectors['theta'];
+    const _set_theta_phi = () => {
+        pa.set_theta_phi(selTheta.value, selPhi.value);
+    };
+    selTheta.addEventListener('change', _set_theta_phi);
+    selPhi.addEventListener('change', _set_theta_phi);
+    _set_theta_phi();
+    return pa;
+}
+
 export class PhasedArray {
     constructor(geometry) {
         this.geometry = geometry;
@@ -60,11 +75,9 @@ export class PhasedArray {
         }
     }
     static from_scene(scene){
-        let geo = scene.selected_geometry().from_scene(scene);
-        scene.geometry = geo;
-        let pa = new PhasedArray(geo);
-
-        let _set_theta_phi = () => {pa.set_theta_phi(
+        const geo = scene.selected_geometry().from_scene(scene);
+        const pa = new PhasedArray(geo);
+        const _set_theta_phi = () => {pa.set_theta_phi(
             scene.selectors['theta'].value,
             scene.selectors['phi'].value
         );};

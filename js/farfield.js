@@ -1,11 +1,30 @@
 import {linspace} from "./util.js";
 
+export const Farfield_Selectors = [
+    'theta-points',
+    'phi-points',
+    'farfield-colormap',
+]
+
+export function create_farfield_scene(scene){
+    Farfield_Selectors.forEach((x) => scene.selectors[x] = scene.html_element(x));
+    const ff = new Farfield();
+    const pTheta = scene.selectors['theta-points'];
+    const pPhi = scene.selectors['phi-points'];
+    const _set_points = () => {
+        ff.set_points(pTheta.value, pPhi.value);
+    };
+    pTheta.addEventListener('change', _set_points);
+    pPhi.addEventListener('change', _set_points);
+    _set_points();
+    scene.build_colormap_selection('farfield-colormap', 'viridis');
+    return ff;
+}
+
 export class Farfield {
     constructor() {
         this.updateWaiting = true;
     }
-    get maxLoop(){return self.phiPoints;}
-
     set_points(thetaPoints, phiPoints) {
         thetaPoints = Number(thetaPoints)
         phiPoints = Number(phiPoints)
@@ -29,17 +48,6 @@ export class Farfield {
             this.farfield_log[i] = new Float32Array(this.thetaPoints);
         }
         this.updateWaiting = false;
-    }
-    static from_scene(scene){
-        let ff = new Farfield();
-        let _set_points = () => {ff.set_points(
-            scene.selectors['theta-points'].value,
-            scene.selectors['phi-points'].value
-        );};
-        scene.selectors['theta-points'].addEventListener('change', _set_points);
-        scene.selectors['phi-points'].addEventListener('change', _set_points);
-        _set_points();
-        return ff;
     }
     create_calculator_loop(scene, progress, status){
         let loopI = 0;
@@ -75,7 +83,7 @@ export class Farfield {
             farfield_re[i] = new Float32Array(this.thetaPoints);
         }
 
-        let _clear = () => {
+        const _clear = () => {
             log("Farfield: clearing...");
             for (let ip = 0; ip < this.phiPoints; ip++){
                 for (let it = 0; it < this.thetaPoints; it++){
@@ -85,7 +93,7 @@ export class Farfield {
             }
         }
 
-        let _calculate = () => {
+        const _calculate = () => {
             set_progress(loopI/arrayX.length);
             for (let ip = 0; ip < this.phiPoints; ip++){
                 const xxv = arrayX[loopI]*Math.cos(this.phi[ip]);
@@ -101,7 +109,7 @@ export class Farfield {
             if (loopI >= arrayX.length) state += 1;
         }
 
-        let _compute_magnitude = () => {
+        const _compute_magnitude = () => {
             log("Farfield: creating magnitude...");
             this.maxValue = -Infinity;
             const sc = arrayX.length;
@@ -114,7 +122,7 @@ export class Farfield {
             }
         }
 
-        let _scale = () => {
+        const _scale = () => {
             log("Farfield: scaling...");
             for (let ip = 0; ip < this.phiPoints; ip++){
                 for (let it = 0; it < this.thetaPoints; it++){
@@ -124,7 +132,7 @@ export class Farfield {
             }
         }
 
-        let _loop = () => {
+        const _loop = () => {
             if (state == 0) {
                 _clear();
                 state += 1;

@@ -1,49 +1,12 @@
 import {linspace} from "./util.js";
-import {SceneGroup} from "./abc.js";
 
-export const Geometry_Selectors = [
-    'geometry',
-    'dx',
-    'dy',
-    'x-count',
-    'y-count',
-    'geo-offset',
-    'max-ring',
-    'min-ring',
-]
-
-export function create_geometry_scene(scene){
-    Geometry_Selectors.forEach((x) => scene.selectors[x] = scene.html_element(x));
-    const geoSelector = scene.selectors['geometry'];
-    const _reset = () => {scene.reset_phased_array();};
-    Geometry_Selectors.forEach((x) => scene.selectors[x].addEventListener('change', _reset));
-    for (let i = 0; i < Geometries.length; i++){
-        const ele = document.createElement('option');
-        ele.value = Geometries[i].title;
-        ele.innerHTML = Geometries[i].title;
-        geoSelector.appendChild(ele);
-    }
-    const _selected_geometry = () => {
-        for (let i = 0; i < Geometries.length; i++){
-            if (geoSelector[i].selected) return Geometries[i];
-        }
-    }
-    const _activate = () => {_selected_geometry().activate(scene);};
-    geoSelector.addEventListener('change', _activate);
-    _activate();
-    scene.selected_geometry = _selected_geometry;
-}
-
-export class Geometry extends SceneGroup {
-    static selectors = Geometry_Selectors;
-    static alwaysVisible = ['geometry', 'dx', 'dy'];
-    constructor() {
-        super();
-        this.updateWaiting = true;
-    }
-    generate() {
-        this.updateWaiting = false;
-    }
+export class Geometry{
+    static args = [];
+    static controls = {
+        'geometry': {'title': null},
+        'dx': {'title': "X-Spacing (λ)", 'type': Number},
+        'dy': {'title': "Y-Spacing (λ)", 'type': Number}
+    };
     set_xy(x, y){
         this.length = x.length;
         this.x = x;
@@ -79,9 +42,15 @@ export class Geometry extends SceneGroup {
     }
 }
 
-export class RectangularGeometry extends Geometry {
+export class RectangularGeometry extends Geometry{
     static title = 'Rectangular';
-    constructor(dx, dy, xCount, yCount) {
+    static args = ['dx', 'dy', 'x-count', 'y-count'];
+    static controls = {
+        ...Geometry.controls,
+        'x-count': {'title': "X Count", 'type': parseInt},
+        'y-count': {'title': "Y Count", 'type': parseInt}
+    };
+    constructor(dx, dy, xCount, yCount){
         super();
         if (dx <= 0) dx = 0.5
         if (dy <= 0) dx = 0.5
@@ -89,15 +58,13 @@ export class RectangularGeometry extends Geometry {
         this.dy = Number(dy)
         this.xCount = Math.max(1, Number(xCount));
         this.yCount = Math.max(1, Number(yCount));
-    }
-    generate() {
-        super.generate()
+
         let tc = this.xCount * this.yCount;
         let x = new Float32Array(tc);
         let y = new Float32Array(tc);
         let index = 0;
-        for (let ix = 0; ix < this.xCount; ix++) {
-            for (let iy = 0; iy < this.yCount; iy++) {
+        for (let ix = 0; ix < this.xCount; ix++){
+            for (let iy = 0; iy < this.yCount; iy++){
                 x[index] = this.dx*ix;
                 y[index] = this.dy*iy;
                 index += 1;
@@ -106,82 +73,56 @@ export class RectangularGeometry extends Geometry {
         this.set_xy(x, y);
         this.adjust_xy();
     }
-    adjust_xy() {return;}
-    static from_scene(scene){
-        return new RectangularGeometry(
-            scene.selectors['dx'].value,
-            scene.selectors['dy'].value,
-            scene.selectors['x-count'].value,
-            scene.selectors['y-count'].value
-        );
-    }
-    static activate(scene) {
-        super.activate(scene);
-        super.show_element(scene, 'x-count', 'X Count');
-        super.show_element(scene, 'y-count', 'Y Count');
-    };
+    adjust_xy(){ return; }
 }
 
-export class RectangularOffsetXGeometry extends RectangularGeometry {
+export class RectangularOffsetXGeometry extends RectangularGeometry{
     static title = 'Rectangular Offset X';
+    static args = RectangularGeometry.args.concat(['geo-offset']);
+    static controls = {
+        ...RectangularGeometry.controls,
+        'geo-offset': {'title': "Offset", 'type': Number},
+    };
     constructor(dx, dy, xCount, yCount, offset){
         super(dx, dy, xCount, yCount);
         this.offset = Number(offset);
     }
-    adjust_xy() {
+    adjust_xy(){
         super.adjust_xy();
-        for (let i = 0; i < this.x.length; i++) {
+        for (let i = 0; i < this.x.length; i++){
             if (i % 2 == 0) continue;
             this.x[i] += this.offset;
         }
     }
-    static from_scene(scene){
-        return new RectangularOffsetXGeometry(
-            scene.selectors['dx'].value,
-            scene.selectors['dy'].value,
-            scene.selectors['x-count'].value,
-            scene.selectors['y-count'].value,
-            scene.selectors['geo-offset'].value
-        );
-    }
-    static activate(scene) {
-        super.activate(scene);
-        super.show_element(scene, 'geo-offset', 'Offset');
-    };
 }
 
-export class RectangularOffsetYGeometry extends RectangularGeometry {
+export class RectangularOffsetYGeometry extends RectangularGeometry{
     static title = 'Rectangular Offset Y';
+    static args = RectangularOffsetXGeometry.args;
+    static controls = RectangularOffsetXGeometry.controls;
     constructor(dx, dy, xCount, yCount, offset){
         super(dx, dy, xCount, yCount);
         this.offset = Number(offset);
     }
-    adjust_xy() {
+    adjust_xy(){
         super.adjust_xy();
         let cc = 0;
-        for (let i = 0; i < this.y.length; i++) {
+        for (let i = 0; i < this.y.length; i++){
             if (i % this.yCount == 0) cc++;
             if (cc % 2 == 0) continue;
             this.y[i] += this.offset;
         }
     }
-    static from_scene(scene){
-        return new RectangularOffsetYGeometry(
-            scene.selectors['dx'].value,
-            scene.selectors['dy'].value,
-            scene.selectors['x-count'].value,
-            scene.selectors['y-count'].value,
-            scene.selectors['geo-offset'].value
-        );
-    }
-    static activate(scene) {
-        super.activate(scene);
-        super.show_element(scene, 'geo-offset', 'Offset');
-    };
 }
 
-export class Hexagonal extends Geometry {
+export class Hexagonal extends Geometry{
     static title = 'Hexagonal';
+    static args = ['dx', 'dy', 'x-count', 'y-count'];
+    static controls = {
+        ...Geometry.controls,
+        'x-count': {'title': "X Count", 'type': parseInt},
+        'y-count': {'title': "Y Count", 'type': parseInt}
+    };
     constructor(dx, dy, xCount, yCount, axis){
         super();
 
@@ -192,15 +133,13 @@ export class Hexagonal extends Geometry {
         this.xCount = Math.max(1, Number(xCount));
         this.yCount = Math.max(1, Number(yCount));
         this.axis = axis;
-    }
-    generate() {
-        super.generate()
+
         let cc, counter;
-        if (this.axis == 'x') {
+        if (this.axis == 'x'){
             cc = this.yCount;
             counter = this.xCount
         }
-        else {
+        else{
             cc = this.xCount;
             counter = this.yCount
 
@@ -226,11 +165,11 @@ export class Hexagonal extends Geometry {
             d += 0.5
         }
         let x, y;
-        if (this.axis == 'x') {
+        if (this.axis == 'x'){
             x = a1;
             y = a2;
         }
-        else {
+        else{
             x = a2;
             y = a1;
         }
@@ -239,41 +178,26 @@ export class Hexagonal extends Geometry {
             new Float32Array(y.map((v) => {return v*this.dy}))
         )
     }
-    static activate(scene) {
-        super.activate(scene);
-        super.show_element(scene, 'x-count', 'X Count');
-        super.show_element(scene, 'y-count', 'Y Count');
-    };
 }
 
-export class HexagonalX extends Hexagonal {
+export class HexagonalX extends Hexagonal{
     static title = 'Hexagonal-X';
-    static from_scene(scene){
-        return new HexagonalX(
-            scene.selectors['dx'].value,
-            scene.selectors['dy'].value,
-            scene.selectors['x-count'].value,
-            scene.selectors['y-count'].value,
-            'x'
-        );
-    }
+    constructor(...args){ super(...args, 'x'); }
 }
 
-export class HexagonalY extends Hexagonal {
+export class HexagonalY extends Hexagonal{
     static title = 'Hexagonal-Y';
-    static from_scene(scene){
-        return new HexagonalX(
-            scene.selectors['dx'].value,
-            scene.selectors['dy'].value,
-            scene.selectors['x-count'].value,
-            scene.selectors['y-count'].value,
-            'y'
-        );
-    }
+    constructor(...args){ super(...args, 'y'); }
 }
 
-export class CircularGeometry extends Geometry {
+export class CircularGeometry extends Geometry{
     static title = 'Circular';
+    static args = ['dx', 'dy', 'min-ring', 'max-ring'];
+    static controls = {
+        ...Geometry.controls,
+        'min-ring': {'title': 'Start Ring', 'type': parseInt},
+        'max-ring': {'title': 'Stop Ring', 'type': parseInt}
+    };
     constructor(dx, dy, minRing, maxRing){
         super();
 
@@ -293,10 +217,6 @@ export class CircularGeometry extends Geometry {
 
         this.minRing = Math.max(0, Number(minRing));
         this.maxRing = Number(maxRing);
-    }
-    generate() {
-        super.generate()
-        let dr = Math.sqrt(this.dx**2 + this.dy**2)/Math.max(this.dx, this.dy)*0.707
 
         let x = [];
         let y = [];
@@ -316,23 +236,16 @@ export class CircularGeometry extends Geometry {
         }
         this.set_xy(Float32Array.from(x), Float32Array.from(y));
     }
-    static from_scene(scene){
-        return new CircularGeometry(
-            scene.selectors['dx'].value,
-            scene.selectors['dy'].value,
-            scene.selectors['min-ring'].value,
-            scene.selectors['max-ring'].value
-        );
-    }
-    static activate(scene) {
-        super.activate(scene);
-        super.show_element(scene, 'min-ring', 'Start Ring');
-        super.show_element(scene, 'max-ring', 'Stop Ring');
-    };
 }
 
-export class SunflowerGeometry extends Geometry {
+export class SunflowerGeometry extends Geometry{
     static title = 'Sunflower';
+    static args = ['dx', 'dy', 'min-ring', 'max-ring'];
+    static controls = {
+        ...Geometry.controls,
+        'min-ring': {'title': 'Start Ring', 'type': parseInt},
+        'max-ring': {'title': 'Stop Ring', 'type': parseInt}
+    };
     constructor(dx, dy, minRing, maxRing){
         super();
 
@@ -352,9 +265,6 @@ export class SunflowerGeometry extends Geometry {
 
         this.minRing = Math.max(0, Number(minRing));
         this.maxRing = Number(maxRing);
-    }
-    generate() {
-        super.generate()
 
         let scaler = 0.22
         let dr = Math.sqrt(this.dx**2 + this.dy**2)
@@ -384,24 +294,11 @@ export class SunflowerGeometry extends Geometry {
 
         this.set_xy(Float32Array.from(x), Float32Array.from(y));
     }
-    static from_scene(scene){
-        return new SunflowerGeometry(
-            scene.selectors['dx'].value,
-            scene.selectors['dy'].value,
-            scene.selectors['min-ring'].value,
-            scene.selectors['max-ring'].value
-        );
-    }
-    static activate(scene) {
-        super.activate(scene);
-        super.show_element(scene, 'min-ring', 'Start Ring');
-        super.show_element(scene, 'max-ring', 'Stop Ring');
-    };
 }
 export const Geometries = [
     RectangularGeometry,
-    RectangularOffsetYGeometry,
     RectangularOffsetXGeometry,
+    RectangularOffsetYGeometry,
     HexagonalX,
     HexagonalY,
     CircularGeometry,

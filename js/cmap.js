@@ -6,6 +6,30 @@ export const Colormaps = [
     'inferno_r',
     'rainbow_r',
 ]
+export class ColormapControl {
+    constructor(selector, defaultSelection) {
+        this.changed = true;
+        this.selector = selector;
+        if (defaultSelection === undefined) defaultSelection = 'viridis';
+        this.defaultSelection = defaultSelection;
+        Colormaps.forEach((cm) => {
+            const ele = document.createElement('option');
+            ele.value = cm;
+            ele.innerHTML = cm;
+            selector.appendChild(ele);
+            if (defaultSelection == cm) ele.selected = true;
+        });
+        selector.addEventListener('change', () => {
+            this.changed = true;
+        });
+    }
+    cmap() {
+        for (let i = 0; i < Colormaps.length; i++)
+            if (this.selector[i].selected)
+                return find_colormap(Colormaps[i]);
+        return find_colormap(this.defaultSelection);
+    }
+}
 /**
  * @callback Colormapper
  * @param {number} val - Value for colormap. Will be bound [0, 1].

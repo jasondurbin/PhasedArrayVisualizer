@@ -6,6 +6,12 @@ export const Taper_Selectors = [
     'taper-x-par-1',
 ]
 
+export class SceneControlTaper {
+    constructor(scene){
+
+    }
+}
+
 export class UniformTaper extends SceneGroup {
     static selectors = Taper_Selectors;
     static alwaysVisible = ['taper-x'];

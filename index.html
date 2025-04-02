@@ -20,7 +20,7 @@
         import {find_colormap} from "./js/cmap.js";
         window.addEventListener('load', (e) => {
             const scene = new Scene('pa');
-            scene.start_state_machine();
+            scene.build_state_machine();
             const ttg = document.querySelector('.theme-toggle');
             ttg.addEventListener('click', () => {
                 if (ttg.innerHTML.includes('dark')) {
@@ -145,6 +145,8 @@
                 <canvas id="pa-geometry-magnitude-canvas"></canvas>
             </div>
             <div class="canvas-footer">
+                <label for="pa-atten-scale">Scale</label>
+                <input type="number" max="100" min="5" value="40" id="pa-atten-scale" name="pa-atten-scale">
                 <label for="pa-geometry-magnitude-colormap">Colormap</label>
                 <select id="pa-geometry-magnitude-colormap" name="pa-geometry-magnitude-colormap"></select>
             </div>
@@ -155,8 +157,8 @@
                 <canvas id="pa-farfield-canvas"></canvas>
             </div>
             <div class="canvas-footer">
-                <label for="pa-log-scale">Scale</label>
-                <input type="number" min="-100" max="0" value="-40" id="pa-log-scale" name="pa-log-scale">
+                <label for="pa-farfield-scale">Scale</label>
+                <input type="number" max="100" min="5" value="40" id="pa-farfield-scale" name="pa-farfield-scale">
                 <label for="pa-farfield-colormap">Colormap</label>
                 <select id="pa-farfield-colormap" name="pa-farfield-colormap"></select>
                 <br />

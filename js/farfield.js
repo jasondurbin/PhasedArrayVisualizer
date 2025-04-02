@@ -1,31 +1,7 @@
 import {linspace} from "./util.js";
 
-export const Farfield_Selectors = [
-    'theta-points',
-    'phi-points',
-    'farfield-colormap',
-]
-
-export function create_farfield_scene(scene){
-    Farfield_Selectors.forEach((x) => scene.selectors[x] = scene.html_element(x));
-    const ff = new Farfield();
-    const pTheta = scene.selectors['theta-points'];
-    const pPhi = scene.selectors['phi-points'];
-    const _set_points = () => {
-        ff.set_points(pTheta.value, pPhi.value);
-    };
-    pTheta.addEventListener('change', _set_points);
-    pPhi.addEventListener('change', _set_points);
-    _set_points();
-    scene.build_colormap_selection('farfield-colormap', 'viridis');
-    return ff;
-}
-
-export class Farfield {
-    constructor() {
-        this.updateWaiting = true;
-    }
-    set_points(thetaPoints, phiPoints) {
+export class FarfieldSpherical{
+    constructor(thetaPoints, phiPoints){
         thetaPoints = Number(thetaPoints)
         phiPoints = Number(phiPoints)
         // ensure samples are even
@@ -33,9 +9,7 @@ export class Farfield {
         if (phiPoints % 2 == 0) phiPoints++;
         this.thetaPoints = thetaPoints;
         this.phiPoints = phiPoints;
-        this.updateWaiting = true;
-    }
-    generate() {
+
         this.theta = linspace(-Math.PI/2, Math.PI/2, this.thetaPoints);
         this.phi = linspace(-Math.PI/2, Math.PI/2, this.phiPoints);
 
@@ -47,130 +21,74 @@ export class Farfield {
             this.farfield_total[i] = new Float32Array(this.thetaPoints);
             this.farfield_log[i] = new Float32Array(this.thetaPoints);
         }
-        this.updateWaiting = false;
     }
-    create_calculator_loop(scene, progress, status){
-        let loopI = 0;
-        let state = 0;
-        let arrayX = scene.pa.geometry.x;
-        let arrayY = scene.pa.geometry.y;
-        let vPha = scene.pa.vectorPhase;
-        let vMag = scene.pa.vectorMag;
-        const logMin = -Math.abs(scene.selectors['log-scale'].value);
+    *calculator_loop(pa){
+        let arrayX = pa.geometry.x;
+        let arrayY = pa.geometry.y;
+        let vPha = pa.vectorPhase;
+        let vMag = pa.vectorMag;
+        let ac = 0;
+        const maxProgress = arrayX.length + 3;
+        const _yield = (text) => {
+            ac++;
+            return {
+                text: text,
+                progress: ac,
+                max: maxProgress
+            };
+        }
+
+        yield _yield('Resetting farfield...');
 
         let sinThetaPi = Float32Array.from({length: this.thetaPoints}, (_, i) => 2*Math.PI*Math.sin(this.theta[i]));
 
         let farfield_im = new Array(this.phiPoints);
         let farfield_re = new Array(this.phiPoints);
-        this.maxValue = -Infinity;
-
-        let log = console.log;
-        let set_progress = (v) => {};
-        let pvalue = 0.0;
-        if (status !== undefined){
-            log = (text) => {
-                status.innerHTML = text;
-                console.log(text);
-            };
-        }
-        if (progress !== undefined){
-            set_progress = (v) => { progress.value = v*100; };
-            pvalue = progress.value/100;
-        }
 
         for (let i = 0; i < this.phiPoints; i++){
             farfield_im[i] = new Float32Array(this.thetaPoints);
             farfield_re[i] = new Float32Array(this.thetaPoints);
         }
-
-        const _clear = () => {
-            log("Farfield: clearing...");
-            for (let ip = 0; ip < this.phiPoints; ip++){
-                for (let it = 0; it < this.thetaPoints; it++){
-                    farfield_im[ip][it] = 0;
-                    farfield_re[ip][it] = 0;
-                }
+        yield _yield('Clearing farfield...');
+        for (let ip = 0; ip < this.phiPoints; ip++){
+            for (let it = 0; it < this.thetaPoints; it++){
+                farfield_im[ip][it] = 0;
+                farfield_re[ip][it] = 0;
             }
         }
-
-        const _calculate = () => {
-            set_progress(loopI/arrayX.length);
+        for (let i = 0; i < arrayX.length; i++){
+            yield _yield('Calculating farfield real/imaginary...');
             for (let ip = 0; ip < this.phiPoints; ip++){
-                const xxv = arrayX[loopI]*Math.cos(this.phi[ip]);
-                const yyv = arrayY[loopI]*Math.sin(this.phi[ip]);
+                const xxv = arrayX[i]*Math.cos(this.phi[ip]);
+                const yyv = arrayY[i]*Math.sin(this.phi[ip]);
                 for (let it = 0; it < this.thetaPoints; it++){
                     const jk = sinThetaPi[it];
-                    const v = xxv*jk + yyv*jk + vPha[loopI];
-                    farfield_re[ip][it] += vMag[loopI]*Math.cos(v);
-                    farfield_im[ip][it] += vMag[loopI]*Math.sin(v);
-                }
-            }
-            loopI += 1;
-            if (loopI >= arrayX.length) state += 1;
-        }
-
-        const _compute_magnitude = () => {
-            log("Farfield: creating magnitude...");
-            this.maxValue = -Infinity;
-            const sc = arrayX.length;
-            for (let ip = 0; ip < this.phiPoints; ip++){
-                for (let it = 0; it < this.thetaPoints; it++){
-                    const c = Math.abs(farfield_re[ip][it]**2 + farfield_im[ip][it]**2)/sc;
-                    this.maxValue = Math.max(c, this.maxValue);
-                    this.farfield_total[ip][it] = c;
+                    const v = xxv*jk + yyv*jk + vPha[i];
+                    farfield_re[ip][it] += vMag[i]*Math.cos(v);
+                    farfield_im[ip][it] += vMag[i]*Math.sin(v);
                 }
             }
         }
-
-        const _scale = () => {
-            log("Farfield: scaling...");
-            for (let ip = 0; ip < this.phiPoints; ip++){
-                for (let it = 0; it < this.thetaPoints; it++){
-                    const c = 10*Math.log10(this.farfield_total[ip][it]/this.maxValue);
-                    this.farfield_log[ip][it] = (c-logMin)/-logMin;
-                }
+        yield _yield('Calculating farfield magnitude...');
+        const sc = arrayX.length;
+        for (let ip = 0; ip < this.phiPoints; ip++){
+            for (let it = 0; it < this.thetaPoints; it++){
+                const c = Math.abs(farfield_re[ip][it]**2 + farfield_im[ip][it]**2)/sc;
+                this.maxValue = Math.max(c, this.maxValue);
+                this.farfield_total[ip][it] = c;
             }
         }
-
-        const _loop = () => {
-            if (state == 0) {
-                _clear();
-                state += 1;
-                log("Farfield: calculating...");
-                return false;
-            }
-            else if (state == 1) {
-                _calculate();
-                return false;
-            }
-            else if (state == 2) {
-                set_progress(pvalue);
-                _compute_magnitude();
-                state += 1;
-                return false;
-            }
-            else if (state == 3) {
-                _scale();
-                state += 1;
-                return false;
-            }
-            else {
-                // release large variables
-                farfield_im = null;
-                farfield_re = null;
-                sinThetaPi = null;
-
-                arrayX = null;
-                arrayY = null;
-                vPha = null;
-                vMag = null;
-                return true;
+    }
+    rescale_magnitude(logMin){
+        logMin = -Math.max(Math.abs(Number(logMin)), 5);
+        for (let ip = 0; ip < this.phiPoints; ip++){
+            for (let it = 0; it < this.thetaPoints; it++){
+                const c = 10*Math.log10(this.farfield_total[ip][it]/this.maxValue);
+                this.farfield_log[ip][it] = (c-logMin)/-logMin;
             }
         }
-        return _loop
     }
     compute_directivity() {
-        console.log("Farfield: computing directivity...");
         let bsa = 0;
         let step = Math.PI/(this.thetaPoints - 1)*Math.PI/(this.phiPoints - 1);
         for (let it = 0; it < this.thetaPoints; it++) {
@@ -182,7 +100,6 @@ export class Farfield {
         return 4*Math.PI*this.maxValue/bsa;
     }
     create_colormap(colormap){
-        console.log("Farfield: creating colormap...");
         this.colormap_vals = new Array(this.phiPoints);
         for (let ip = 0; ip < this.phiPoints; ip++){
             this.colormap_vals[ip] = new Array(this.thetaPoints);
@@ -193,7 +110,6 @@ export class Farfield {
     }
     draw_polar(canvas){
         const ctx = canvas.getContext('2d');
-        console.log("Drawing...");
         ctx.reset();
         canvas.width = 7000;
         canvas.height = 7000;

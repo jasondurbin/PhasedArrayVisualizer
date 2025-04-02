@@ -1,4 +1,5 @@
 import {linspace} from "./util.js";
+import {SceneGroup} from "./abc.js";
 
 export const Geometry_Selectors = [
     'geometry',
@@ -11,7 +12,7 @@ export const Geometry_Selectors = [
     'min-ring',
 ]
 
-export function initialize_geometry_scene(scene){
+export function create_geometry_scene(scene){
     Geometry_Selectors.forEach((x) => scene.selectors[x] = scene.html_element(x));
     const geoSelector = scene.selectors['geometry'];
     const _reset = () => {scene.reset_phased_array();};
@@ -33,8 +34,11 @@ export function initialize_geometry_scene(scene){
     scene.selected_geometry = _selected_geometry;
 }
 
-export class Geometry {
+export class Geometry extends SceneGroup {
+    static selectors = Geometry_Selectors;
+    static alwaysVisible = ['geometry', 'dx', 'dy'];
     constructor() {
+        super();
         this.updateWaiting = true;
     }
     generate() {
@@ -73,29 +77,11 @@ export class Geometry {
             ctx.stroke();
         }
     }
-    static activate(scene){
-        Geometry_Selectors.forEach((x) => {
-            if (x != 'geometry' && x != 'dx' && x != 'dy') {
-                let eid = scene.selectors[x].id;
-                let ele = document.querySelector("#" + eid + "-div");
-                ele.style.display = "none";
-            }
-        });
-    };
-    static show_element(scene, selector, label){
-        let eid = scene.selectors[selector].id;
-        let ele = document.querySelector("#" + eid + "-div");
-        ele.style.display = "flex";
-        if (label !== undefined){
-            let lbl = ele.querySelector("label");
-            if (lbl !== null) lbl.innerHTML = label;
-        }
-    }
 }
 
 export class RectangularGeometry extends Geometry {
     static title = 'Rectangular';
-    constructor(dx, dy, xCount, yCount){
+    constructor(dx, dy, xCount, yCount) {
         super();
         if (dx <= 0) dx = 0.5
         if (dy <= 0) dx = 0.5

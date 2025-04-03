@@ -99,6 +99,12 @@ export class SceneControlWithSelector extends SceneControl{
                     v = min;
                     ele.value = v;
                 }
+                const max = def['max'];
+                if (max === undefined);
+                else if (v > max){
+                    v = max;
+                    ele.value = v;
+                }
             }
             args.push(v);
         })

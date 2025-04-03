@@ -83,14 +83,22 @@ export class SceneControlWithSelector extends SceneControl{
         const kls = this.selected_class();
         let args = [];
         kls.args.forEach((x) => {
-            let def = kls.controls[x];
-            let v = this.find_element(x).value;
+            const def = kls.controls[x];
+            const ele = this.find_element(x);
+            let v = ele.value;
             if (def !== undefined){
-                const dtype =  def['type'];
+                const dtype = def['type'];
                 if (dtype == 'float') v = Number(v);
                 else if (dtype == 'int') v = parseInt(v);
                 else if (dtype === undefined);
                 else throw Error(`Unknown data type ${dtype}`);
+
+                const min = def['min'];
+                if (min === undefined);
+                else if (v < min){
+                    v = min;
+                    ele.value = v;
+                }
             }
             args.push(v);
         })

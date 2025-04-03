@@ -4,8 +4,8 @@ export class Geometry{
     static args = [];
     static controls = {
         'geometry': {'title': null},
-        'dx': {'title': "X-Spacing (λ)", 'type': "float"},
-        'dy': {'title': "Y-Spacing (λ)", 'type': "float"}
+        'dx': {'title': "X-Spacing (λ)", 'type': "float", 'min': 0.01},
+        'dy': {'title': "Y-Spacing (λ)", 'type': "float", 'min': 0.01}
     };
     set_xy(x, y){
         this.length = x.length;
@@ -47,8 +47,8 @@ export class RectangularGeometry extends Geometry{
     static args = ['dx', 'dy', 'x-count', 'y-count'];
     static controls = {
         ...Geometry.controls,
-        'x-count': {'title': "X Count", 'type': "int", 'default': 8},
-        'y-count': {'title': "Y Count", 'type': "int", 'default': 8}
+        'x-count': {'title': "X Count", 'type': "int", 'default': 8, 'min': 1},
+        'y-count': {'title': "Y Count", 'type': "int", 'default': 8, 'min': 1}
     };
     constructor(dx, dy, xCount, yCount){
         super();
@@ -121,8 +121,8 @@ export class Hexagonal extends Geometry{
     static args = ['dx', 'dy', 'x-count', 'y-count'];
     static controls = {
         ...Geometry.controls,
-        'x-count': {'title': "X Count", 'type': "int", 'default': 8},
-        'y-count': {'title': "Y Count", 'type': "int", 'default': 8}
+        'x-count': {'title': "X Count", 'type': "int", 'default': 8, 'min': 1},
+        'y-count': {'title': "Y Count", 'type': "int", 'default': 8, 'min': 1}
     };
     constructor(dx, dy, xCount, yCount, axis){
         super();
@@ -194,11 +194,11 @@ export class HexagonalY extends Hexagonal{
 
 export class CircularGeometry extends Geometry{
     static title = 'Circular';
-    static args = ['dx', 'dy', 'min-ring', 'max-ring'];
+    static args = ['dx', 'dy', 'x-count', 'y-count'];
     static controls = {
         ...Geometry.controls,
-        'min-ring': {'title': 'Start Ring', 'type': "int", 'default': 0},
-        'max-ring': {'title': 'Stop Ring', 'type': "int", 'default': 8}
+        'x-count': {'title': 'Start Ring', 'type': "int", 'default': 0, 'min': 0},
+        'y-count': {'title': 'Stop Ring', 'type': "int", 'default': 8, 'min': 1}
     };
     constructor(dx, dy, minRing, maxRing){
         super();
@@ -243,11 +243,11 @@ export class CircularGeometry extends Geometry{
 
 export class SunflowerGeometry extends Geometry{
     static title = 'Sunflower';
-    static args = ['dx', 'dy', 'min-ring', 'max-ring'];
+    static args = ['dx', 'dy', 'x-count', 'y-count'];
     static controls = {
         ...Geometry.controls,
-        'min-ring': {'title': 'Start Ring', 'type': "int", 'default': 0},
-        'max-ring': {'title': 'Stop Ring', 'type': "int", 'default': 8}
+        'x-count': {'title': 'Start Ring', 'type': "int", 'default': 0, 'min': 0},
+        'y-count': {'title': 'Stop Ring', 'type': "int", 'default': 8, 'min': 1}
     };
     constructor(dx, dy, minRing, maxRing){
         super();

@@ -22,7 +22,7 @@ export class TrianglePedestal extends UniformTaper{
     }
     static controls = {
         ...UniformTaper.controls,
-        'taper-x-par-1': {'title': "Pedestal", 'type': "float", 'default': 0.0},
+        'taper-x-par-1': {'title': "Pedestal", 'type': "float", 'default': 0.0, 'min': 0.0},
     };
     calculate_weights(x){
         const v = super.calculate_weights(x);
@@ -47,8 +47,8 @@ export class TaylorNBar extends UniformTaper{
     }
     static controls = {
         ...UniformTaper.controls,
-        'taper-x-par-1': {'title': "N Bar", 'type': "int", 'default': 5},
-        'taper-x-par-2': {'title': "SLL", 'type': "float", 'default': 25.0}
+        'taper-x-par-1': {'title': "N Bar", 'type': "int", 'default': 5, 'min': 1},
+        'taper-x-par-2': {'title': "SLL", 'type': "float", 'default': 25.0, 'min': 13.0}
     };
     calculate_weights(x){
         let v = super.calculate_weights(x);

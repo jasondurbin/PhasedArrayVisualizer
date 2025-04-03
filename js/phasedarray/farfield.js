@@ -58,7 +58,7 @@ export class FarfieldSpherical{
             }
         }
         for (let i = 0; i < arrayX.length; i++){
-            yield _yield('Calculating farfield real/imaginary...');
+            yield _yield('Calculating farfield...');
             for (let ip = 0; ip < this.phiPoints; ip++){
                 const xxv = arrayX[i]*Math.cos(this.phi[ip]);
                 const yyv = arrayY[i]*Math.sin(this.phi[ip]);
@@ -70,7 +70,7 @@ export class FarfieldSpherical{
                 }
             }
         }
-        yield _yield('Calculating farfield magnitude...');
+        yield _yield('Calculating farfield...');
         const sc = arrayX.length;
         for (let ip = 0; ip < this.phiPoints; ip++){
             for (let it = 0; it < this.thetaPoints; it++){

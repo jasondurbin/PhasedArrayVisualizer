@@ -37,6 +37,7 @@ export class FarfieldSpherical{
                 max: maxProgress
             };
         }
+        this.maxValue = -Infinity;
 
         yield _yield('Resetting farfield...');
 
@@ -74,9 +75,9 @@ export class FarfieldSpherical{
         for (let ip = 0; ip < this.phiPoints; ip++){
             for (let it = 0; it < this.thetaPoints; it++){
                 const c = Math.abs(farfield_re[ip][it]**2 + farfield_im[ip][it]**2)/sc;
-                this.maxValue = Math.max(c, this.maxValue);
                 this.farfield_total[ip][it] = c;
             }
+            this.maxValue = Math.max(this.maxValue, ...this.farfield_total[ip]);
         }
     }
     rescale_magnitude(logMin){
@@ -90,7 +91,7 @@ export class FarfieldSpherical{
     }
     compute_directivity() {
         let bsa = 0;
-        let step = Math.PI/(this.thetaPoints - 1)*Math.PI/(this.phiPoints - 1);
+        const step = Math.PI/(this.thetaPoints - 1)*Math.PI/(this.phiPoints - 1);
         for (let it = 0; it < this.thetaPoints; it++) {
             let st = Math.abs(Math.sin(this.theta[it]))*step;
             for (let ip = 0; ip < this.phiPoints; ip++) {

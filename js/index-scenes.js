@@ -2,14 +2,15 @@ import {SceneControl, SceneControlWithSelector} from "./scene/scene-abc.js";
 import {Geometries} from "./phasedarray/geometry.js";
 import {PhasedArray} from "./phasedarray/phasedarray.js";
 import {FarfieldSpherical} from "./phasedarray/farfield.js"
+import {Tapers} from "./phasedarray/tapers.js"
 
 export class SceneControlGeometry extends SceneControlWithSelector{
     constructor(parent){
         super(parent, 'geometry', Geometries);
         this.activeGeometry = null;
     }
-    element_changed(key){
-        super.element_changed(key);
+    control_changed(key){
+        super.control_changed(key);
         this.activeGeometry = null;
     }
     get calculationWaiting(){
@@ -19,6 +20,7 @@ export class SceneControlGeometry extends SceneControlWithSelector{
         if (this.calculationWaiting){
             queue.add('Building geometry...', () => {
                     this.activeGeometry = this.build_active_object();
+                    this.activeGeometry.build();
                 }
             )
         }
@@ -39,25 +41,29 @@ export class SceneControlPhasedArray extends SceneControl{
     }
     add_to_queue(queue){
         const geo = this.parent.geometryControl;
+        const taperX = this.parent.taperXControl;
         const cmPhase = this.colormap[CMKEYPHASE];
         const cmAtten = this.colormap[CMKEYATTEN];
         let needsPhase = this.changed['theta'] || this.changed['phi'];
+        let needsAttenX = taperX.calculationWaiting;
+        let needsAttenY = false;
         let needsAtten = false;
         let phaseCMChanged = cmPhase.changed;
         let attenCMChanged = cmAtten.changed;
         let attenRescale = this.changed['atten-scale'];
         this.farfieldNeedsCalculation = false
-        if (geo.calculationWaiting || this.pa === null){
+        if (geo.calculationWaiting || this.pa === null || taperX.calculationWaiting){
             queue.add('Updating array...', () => {
-                    this.pa = new PhasedArray(geo.activeGeometry);
+                    this.pa = new PhasedArray(geo.activeGeometry, taperX.activeTaper);
                 }
             )
             needsPhase = true;
-            needsAtten = true;
+            needsAttenX = true;
+            needsAttenY = true;
             this.farfieldNeedsCalculation = true;
         }
         if (needsPhase){
-            queue.add('Computing phase...', () => {
+            queue.add('Calculating phase...', () => {
                 this.pa.set_theta_phi(
                     this.find_element('theta').value,
                     this.find_element('phi').value
@@ -71,9 +77,24 @@ export class SceneControlPhasedArray extends SceneControl{
             phaseCMChanged = true;
             this.farfieldNeedsCalculation = true;
         }
+        if (needsAttenX){
+            queue.add('Calculating X taper...', () => {
+                this.pa.calculate_x_taper();
+            });
+            needsAtten = true;
+        }
+        if (needsAttenY){
+            queue.add('Calculating Y taper...', () => {
+                this.pa.calculate_y_taper();
+            });
+            needsAtten = true;
+        }
         if (needsAtten){
-            queue.add('Computing attenuation...', () => {
-                this.pa.compute_magnitude();
+            queue.add('Multiplying tapers...', () => {
+                this.pa.calculate_final_taper();
+            });
+            queue.add('Rescaling tapers...', () => {
+                this.pa.rescale_final_taper();
             });
             attenRescale = true;
             this.farfieldNeedsCalculation = true;
@@ -165,6 +186,28 @@ export class SceneControlFarfield extends SceneControl{
             queue.add('Drawing farfield...', () => {
                 this.ff.draw_polar(this.canvas);
             });
+        }
+    }
+}
+
+export class SceneControlTaper extends SceneControlWithSelector{
+    constructor(parent){
+        super(parent, 'taper-x', Tapers);
+        this.activeTaper = null;
+    }
+    control_changed(key){
+        super.control_changed(key);
+        this.activeTaper = null;
+    }
+    get calculationWaiting(){
+        return this.activeTaper === null;
+    }
+    add_to_queue(queue){
+        if (this.calculationWaiting){
+            queue.add('Building Taper...', () => {
+                    this.activeTaper = this.build_active_object();
+                }
+            )
         }
     }
 }

@@ -1,4 +1,4 @@
-import {SceneControlPhasedArray, SceneControlGeometry, SceneControlFarfield} from "./index-scenes.js";
+import {SceneControlPhasedArray, SceneControlGeometry, SceneControlFarfield, SceneControlTaper} from "./index-scenes.js";
 import {SceneParent} from "./scene/scene-abc.js"
 import {SceneQueue} from "./scene/scene-queue.js";
 
@@ -19,6 +19,7 @@ export class PhasedArrayScene extends SceneParent{
         this.geometryControl = new SceneControlGeometry(this);
         this.arrayControl = new SceneControlPhasedArray(this);
         this.farfieldControl = new SceneControlFarfield(this);
+        this.taperXControl = new SceneControlTaper(this);
 
         this.elements['refresh'].addEventListener('click', () => {
             this.build_state_machine();
@@ -27,6 +28,7 @@ export class PhasedArrayScene extends SceneParent{
     build_state_machine(){
         this.queue.reset();
         this.geometryControl.add_to_queue(this.queue);
+        this.taperXControl.add_to_queue(this.queue);
         this.arrayControl.add_to_queue(this.queue);
         this.farfieldControl.add_to_queue(this.queue);
         this.queue.start();

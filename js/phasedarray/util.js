@@ -40,3 +40,19 @@ export function factorial_log(value){
     for (let i = 0; i < a.length; i++) s += Math.log10(a[i]);
     return s;
 }
+
+/**
+* Normalizes input dimensions to be between [-m, m].
+*
+* @param {Float32Array} x
+* @param {float} m (option, default=0.5)
+*
+* @return {Float32Array}
+* */
+export function normalize_input(x, m){
+    if (m === undefined) m = 0.5;
+    const maxX = Math.max(...x);
+    const minX = Math.min(...x);
+    const den = (maxX - minX)/(m*2);
+    return Float32Array.from({'length': x.length}, (_, i) => (x[i] - minX)/den - m);
+}

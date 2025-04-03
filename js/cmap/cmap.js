@@ -55,6 +55,7 @@ export function find_colormap(name){
 
     function colormapper(value){
         if (isNaN(value)) return `rgb(0,0,0)`
+        if (!isFinite(value)) return `rgb(0,0,0)`
         let v = Math.max(0, Math.min(1, value));
         let i = v * (colors.length - 1);
         let i1 = Math.floor(i);

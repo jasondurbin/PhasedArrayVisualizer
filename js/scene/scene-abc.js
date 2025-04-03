@@ -26,7 +26,6 @@ export class SceneControl{
         this.parent = parent;
         this.changed = {};
         this.colormap = {};
-        this.activityWaiting = true;
         parent.find_elements(controls);
         controls.forEach((k) => {
             this.changed[k] = true;
@@ -34,10 +33,7 @@ export class SceneControl{
         });
         this.controls = controls;
     }
-    control_changed(key){
-        this.activityWaiting = true;
-        this.changed[key] = true;
-    }
+    control_changed(key){ this.changed[key] = true; }
     clear_changed(...keys){
         keys.forEach((k) => {
             if (k in this.changed) this.changed[k] = false;
@@ -68,9 +64,14 @@ export class SceneControlWithSelector extends SceneControl{
             ele.value = x.title;
             ele.innerHTML = x.title;
             this.primarySelector.appendChild(ele);
+            x.controls = JSON.parse(JSON.stringify(x.controls));
         })
         this.primarySelector.addEventListener('change', () => {this.show_controls();});
         this.show_controls();
+    }
+    control_changed(key){
+        super.control_changed(key);
+        this.selected_class().controls[key]['last'] = this.find_element(key).value;
     }
     selected_class(){
         for (let i = 0; i < this.classes.length; i++){
@@ -84,7 +85,13 @@ export class SceneControlWithSelector extends SceneControl{
         kls.args.forEach((x) => {
             let def = kls.controls[x];
             let v = this.find_element(x).value;
-            if (def !== undefined && def['type'] !== undefined) v = def['type'](v);
+            if (def !== undefined){
+                const dtype =  def['type'];
+                if (dtype == 'float') v = Number(v);
+                else if (dtype == 'int') v = parseInt(v);
+                else if (dtype === undefined);
+                else throw Error(`Unknown data type ${dtype}`);
+            }
             args.push(v);
         })
         return new kls(...args);
@@ -93,19 +100,27 @@ export class SceneControlWithSelector extends SceneControl{
         const kls = this.selected_class();
         const visible = Object.keys(kls.controls);
         this.controls.forEach((k) => {
-            const eid = this.find_element(k).id;
-            const ele = document.querySelector("#" + eid + "-div");
+            const ele = this.find_element(k);
+            const eid = ele.id;
+            const div = document.querySelector("#" + eid + "-div");
             if (visible.includes(k)){
                 const def = kls.controls[k];
-                if (ele === null) return;
+                const ovalue = def['default'];
+                let nvalue = def['last'];
+                if (nvalue === undefined) nvalue = ovalue;
+                if (nvalue !== undefined) ele.value = nvalue;
+                if (div === null) return;
                 const title = def['title'];
-                ele.style.display = "flex";
+                div.style.display = "flex";
                 if (title !== undefined && title !== null){
-                    const lbl = ele.querySelector("label");
+                    const lbl = div.querySelector("label");
                     if (lbl !== null) lbl.innerHTML = title;
                 }
             }
-            else ele.style.display = "none";
+            else {
+                if (div === null) throw Error(`Missing <div> wrapper on input "${k}".`);
+                div.style.display = "none";
+            }
         });
     };
 }

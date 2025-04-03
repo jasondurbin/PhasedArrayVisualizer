@@ -4,8 +4,8 @@ export class Geometry{
     static args = [];
     static controls = {
         'geometry': {'title': null},
-        'dx': {'title': "X-Spacing (λ)", 'type': Number},
-        'dy': {'title': "Y-Spacing (λ)", 'type': Number}
+        'dx': {'title': "X-Spacing (λ)", 'type': "float"},
+        'dy': {'title': "Y-Spacing (λ)", 'type': "float"}
     };
     set_xy(x, y){
         this.length = x.length;
@@ -47,18 +47,19 @@ export class RectangularGeometry extends Geometry{
     static args = ['dx', 'dy', 'x-count', 'y-count'];
     static controls = {
         ...Geometry.controls,
-        'x-count': {'title': "X Count", 'type': parseInt},
-        'y-count': {'title': "Y Count", 'type': parseInt}
+        'x-count': {'title': "X Count", 'type': "int", 'default': 8},
+        'y-count': {'title': "Y Count", 'type': "int", 'default': 8}
     };
     constructor(dx, dy, xCount, yCount){
         super();
         if (dx <= 0) dx = 0.5
         if (dy <= 0) dx = 0.5
         this.dx = Number(dx);
-        this.dy = Number(dy)
+        this.dy = Number(dy);
         this.xCount = Math.max(1, Number(xCount));
         this.yCount = Math.max(1, Number(yCount));
-
+    }
+    build(){
         let tc = this.xCount * this.yCount;
         let x = new Float32Array(tc);
         let y = new Float32Array(tc);
@@ -81,7 +82,7 @@ export class RectangularOffsetXGeometry extends RectangularGeometry{
     static args = RectangularGeometry.args.concat(['geo-offset']);
     static controls = {
         ...RectangularGeometry.controls,
-        'geo-offset': {'title': "Offset", 'type': Number},
+        'geo-offset': {'title': "Offset", 'type': "float", 'default': 0.25},
     };
     constructor(dx, dy, xCount, yCount, offset){
         super(dx, dy, xCount, yCount);
@@ -120,8 +121,8 @@ export class Hexagonal extends Geometry{
     static args = ['dx', 'dy', 'x-count', 'y-count'];
     static controls = {
         ...Geometry.controls,
-        'x-count': {'title': "X Count", 'type': parseInt},
-        'y-count': {'title': "Y Count", 'type': parseInt}
+        'x-count': {'title': "X Count", 'type': "int", 'default': 8},
+        'y-count': {'title': "Y Count", 'type': "int", 'default': 8}
     };
     constructor(dx, dy, xCount, yCount, axis){
         super();
@@ -133,7 +134,8 @@ export class Hexagonal extends Geometry{
         this.xCount = Math.max(1, Number(xCount));
         this.yCount = Math.max(1, Number(yCount));
         this.axis = axis;
-
+    }
+    build(){
         let cc, counter;
         if (this.axis == 'x'){
             cc = this.yCount;
@@ -195,8 +197,8 @@ export class CircularGeometry extends Geometry{
     static args = ['dx', 'dy', 'min-ring', 'max-ring'];
     static controls = {
         ...Geometry.controls,
-        'min-ring': {'title': 'Start Ring', 'type': parseInt},
-        'max-ring': {'title': 'Stop Ring', 'type': parseInt}
+        'min-ring': {'title': 'Start Ring', 'type': "int", 'default': 0},
+        'max-ring': {'title': 'Stop Ring', 'type': "int", 'default': 8}
     };
     constructor(dx, dy, minRing, maxRing){
         super();
@@ -217,7 +219,8 @@ export class CircularGeometry extends Geometry{
 
         this.minRing = Math.max(0, Number(minRing));
         this.maxRing = Number(maxRing);
-
+    }
+    build(){
         let x = [];
         let y = [];
         for (let i = this.minRing; i < this.maxRing; i++){
@@ -243,8 +246,8 @@ export class SunflowerGeometry extends Geometry{
     static args = ['dx', 'dy', 'min-ring', 'max-ring'];
     static controls = {
         ...Geometry.controls,
-        'min-ring': {'title': 'Start Ring', 'type': parseInt},
-        'max-ring': {'title': 'Stop Ring', 'type': parseInt}
+        'min-ring': {'title': 'Start Ring', 'type': "int", 'default': 0},
+        'max-ring': {'title': 'Stop Ring', 'type': "int", 'default': 8}
     };
     constructor(dx, dy, minRing, maxRing){
         super();
@@ -265,7 +268,8 @@ export class SunflowerGeometry extends Geometry{
 
         this.minRing = Math.max(0, Number(minRing));
         this.maxRing = Number(maxRing);
-
+    }
+    build(){
         let scaler = 0.22
         let dr = Math.sqrt(this.dx**2 + this.dy**2)
 

@@ -32,8 +32,8 @@ export class PhasedArray{
         let pd = phaseMax - phaseMin;
         for (let i = 0; i < this.geometry.length; i++){
             let pha = this.vectorPhase[i]*180/Math.PI;
-            if (pha > 180) pha -= 360;
-            if (pha < -180) pha += 360;
+            while (pha > 180) pha -= 360;
+            while (pha < -180) pha += 360;
             this.vectorPhaseScale[i] = (pha - phaseMin)/pd;
         }
     }
@@ -64,7 +64,12 @@ export class PhasedArray{
     }
     calculate_final_taper(){
         for (let i = 0; i < this.geometry.length; i++){
-            this.vectorMag[i] = this.vectorMagX[i] * this.vectorMagY[i];
+            let m = this.vectorMagX[i] * this.vectorMagY[i];
+            if (m < 0) {
+                m = Math.abs(m)
+                this.vectorPhase[i] += Math.PI;
+            }
+            this.vectorMag[i] = m;
         }
     }
     draw_phase(canvas, cmap){

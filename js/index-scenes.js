@@ -48,6 +48,7 @@ export class SceneControlPhasedArray extends SceneControl{
         let needsAttenX = taperX.calculationWaiting;
         let needsAttenY = false;
         let needsAtten = false;
+        let phaseRescale = false;
         let phaseCMChanged = cmPhase.changed;
         let attenCMChanged = cmAtten.changed;
         let attenRescale = this.changed['atten-scale'];
@@ -71,10 +72,7 @@ export class SceneControlPhasedArray extends SceneControl{
                 this.pa.compute_phase();
                 this.clear_changed('theta', 'phi');
             });
-            queue.add('Scaling phase...', () => {
-                this.pa.rescale_phase()
-            });
-            phaseCMChanged = true;
+            phaseRescale = true;
             this.farfieldNeedsCalculation = true;
         }
         if (needsAttenX){
@@ -98,6 +96,12 @@ export class SceneControlPhasedArray extends SceneControl{
             });
             attenRescale = true;
             this.farfieldNeedsCalculation = true;
+        }
+        if (phaseRescale){
+            queue.add('Scaling phase...', () => {
+                this.pa.rescale_phase()
+            });
+            phaseCMChanged = true;
         }
         if (attenRescale){
             queue.add('Scaling attenuation...', () => {

@@ -33,4 +33,17 @@ export class PhasedArrayScene extends SceneParent{
         this.farfieldControl.add_to_queue(this.queue);
         this.queue.start();
     }
+    create_canvas_hover(canvas){
+        const p = canvas.parentElement.parentElement;
+        const h = p.querySelector(".canvas-header")
+        const ele = document.createElement("div");
+        ele.classList = "canvas-hover-div";
+        ele.innerHTML = "&nbsp;";
+        canvas.hover_container = ele;
+        h.appendChild(ele);
+
+        canvas.addEventListener('mouseleave', () => {
+            canvas.hover_container.innerHTML = "&nbsp";
+        });
+    }
 }

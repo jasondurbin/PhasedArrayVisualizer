@@ -1,4 +1,4 @@
-import {linspace} from "./util.js";
+import {linspace, adjust_theta_phi} from "./util.js";
 
 export class FarfieldSpherical{
     constructor(thetaPoints, phiPoints){
@@ -16,6 +16,7 @@ export class FarfieldSpherical{
         this.farfield_total = new Array(this.phiPoints);
         this.farfield_log = new Array(this.phiPoints);
         this.maxValue = -Infinity;
+        this.dirMax = null;
 
         for (let i = 0; i < this.phiPoints; i++){
             this.farfield_total[i] = new Float32Array(this.thetaPoints);
@@ -28,7 +29,7 @@ export class FarfieldSpherical{
         let vPha = pa.vectorPhase;
         let vMag = pa.vectorMag;
         let ac = 0;
-        const maxProgress = arrayX.length + 3;
+        const maxProgress = arrayX.length + 4;
         const _yield = (text) => {
             ac++;
             return {
@@ -79,13 +80,15 @@ export class FarfieldSpherical{
             }
             this.maxValue = Math.max(this.maxValue, ...this.farfield_total[ip]);
         }
+        yield _yield('Calculating Directivity...');
+        this.dirMax = this.compute_directivity();
     }
     rescale_magnitude(logMin){
-        logMin = -Math.max(Math.abs(Number(logMin)), 5);
+        logMin = Math.max(Math.abs(Number(logMin)), 5);
         for (let ip = 0; ip < this.phiPoints; ip++){
             for (let it = 0; it < this.thetaPoints; it++){
                 const c = 10*Math.log10(this.farfield_total[ip][it]/this.maxValue);
-                this.farfield_log[ip][it] = (c-logMin)/-logMin;
+                this.farfield_log[ip][it] = (c + logMin)/logMin;
             }
         }
     }
@@ -112,15 +115,34 @@ export class FarfieldSpherical{
     draw_polar(canvas){
         const ctx = canvas.getContext('2d');
         ctx.reset();
-        canvas.width = 7000;
-        canvas.height = 7000;
+        const scale = 7000;
+        canvas.width = scale;
+        canvas.height = scale;
         const thetaStep = Math.PI/(this.thetaPoints - 1);
         const phiStep = Math.PI/(this.phiPoints - 1);
         const r = Math.min(canvas.width/2, canvas.height/2);
         const ts = Math.PI + thetaStep;
-        const smoothing = thetaStep*0.5;
+        const smoothing = Math.min(0.01, thetaStep*0.5);
+        const pci = (this.phiPoints - 1)/2;
+        const tci = (this.thetaPoints - 1)/2;
         ctx.translate(canvas.width/2, canvas.height/2);
         ctx.scale(1.0, -1.0);
+
+        canvas.index_from_event = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const u = 2*(e.clientX - rect.left)/rect.width - 1.0;
+            const v = 1-2*(e.clientY - rect.top)/rect.height;
+
+            const r = Math.sqrt(u**2 + v**2);
+            if (r > 1) return [null, null];
+            const [th, ph] = adjust_theta_phi(r*Math.PI/2, Math.atan2(v, u), false);
+            let it = Math.round((Math.PI/2 + th)/thetaStep);
+            let ip = Math.round((Math.PI/2 + ph)/phiStep);
+            if (it >= this.thetaPoints) it = this.thetaPoints - 1;
+            if (ip >= this.phiPoints) ip = this.phiPoints - 1;
+            return [it, ip];
+        };
+
         for (let it = 0; it < this.thetaPoints; it++) {
             const r1 = Math.abs((this.theta[it]-thetaStep/2)/ts*r)*2+smoothing;
             const r2 = Math.abs((this.theta[it]+thetaStep/2)/ts*r)*2-smoothing;
@@ -134,10 +156,10 @@ export class FarfieldSpherical{
                 }
                 ctx.fillStyle = this.colormap_vals[ip][it];
                 ctx.beginPath();
-                if (this.theta[it] == 0 && this.phi[it] == 0){
+                if (it == tci && ip == pci){
                     ctx.arc(0.0, 0.0, r2, 0, 2*Math.PI);
                 }
-                else {
+                else{
                     ctx.arc(0.0, 0.0, r2, a1, a2);
                     ctx.lineTo(r1*Math.cos(a2), r1*Math.sin(a2));
                     ctx.arc(0.0, 0.0, r1, a2, a1, true);
@@ -147,7 +169,46 @@ export class FarfieldSpherical{
                 ctx.fill();
             }
         }
+        const thetaSteps = 7;
+        const phiSteps = 13;
+        this.add_phi_grid(canvas, phiSteps, 1/(thetaSteps-1));
+        this.add_theta_grid(canvas, thetaSteps);
+
         // delete the colormap values to clear memory.
         delete this.colormap_vals;
+    }
+    add_theta_grid(canvas, steps){
+        if (steps === undefined) steps = 7;
+        const ctx = canvas.getContext('2d');
+        const scale = canvas.width*0.5;
+        const c = 1/(steps - 1);
+        for (let i = 1; i < (steps-1); i++){
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 20.0;
+            ctx.setLineDash([100, 100]);
+            ctx.arc(0.0, 0.0, scale*(i*c), 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.closePath();
+        }
+    }
+    add_phi_grid(canvas, steps, startFraction){
+        if (steps === undefined) steps = 13;
+        if (startFraction === undefined) startFraction = 0.0;
+        const ctx = canvas.getContext('2d');
+        const scale = canvas.width*0.5;
+        const c = 2*Math.PI/(steps - 1);
+        const start = startFraction*scale;
+        for (let i = 0; i < (steps-1); i++){
+            const ph = i*c
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(ph)*start, Math.sin(ph)*start);
+            ctx.lineTo(Math.cos(ph)*scale, Math.sin(ph)*scale);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 20.0;
+            ctx.setLineDash([100, 100]);
+            ctx.stroke();
+            ctx.closePath();
+        }
     }
 }

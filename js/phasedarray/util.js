@@ -14,9 +14,9 @@ export function linspace(start, stop, num){
 /**
  * Create a range Float32Array.
  *
- * @param {int} start
+ * @param {int} [start=0] (optional)
  * @param {int} stop
- * @param {int} step
+ * @param {int} [step=1] (optional)
  *
  * @return {Float32Array}
  * */
@@ -66,7 +66,7 @@ function factorial(v) {
 * Normalizes input dimensions to be between [-m, m].
 *
 * @param {Float32Array} x
-* @param {float} m (optional) Normalization bounds (default=0.5)
+* @param {float} [m=0.5] (optional) Normalization bounds.
 *
 * @return {Float32Array}
 * */
@@ -120,8 +120,8 @@ export function ones(len){ return Float32Array.from({length: len}, () => 1); }
 * Calculate the zero-order Modified Bessel function.
 *
 * @param {float} x
-* @param {int} maxIter (optional) Max iteration (default=50)
-* @param {float} tolerance (optional) Calculation tolerance (default=1e-9)
+* @param {int} [maxIter=60] (optional) Max iteration
+* @param {float} [tolerance=1e-9] (optional) Calculation tolerance
 *
 * @return {float}
 * */
@@ -137,7 +137,26 @@ export function bessel_modified_0(x, maxIter, tolerance){
     return 1 + s;
 }
 
-export function chebyshev_polynomial(kind, x){
-    if (x <= -1) return Math.cos(kind*Math.acos(x));
-    return Math.cosh(kind*Math.acosh(x));
+/**
+* Adjust theta/phi such that each are [-90, 90] (or [-PI/2, PI/2]).
+*
+* @param {float} theta Theta
+* @param {float} phi Phi
+* @param {boolean} [deg=true] (optional) Input/Output in deg?
+*
+* @return {[float, float]} theta, phi
+* */
+export function adjust_theta_phi(theta, phi, deg){
+    let o1 = 180;
+    if (deg !== undefined && !deg) o1 = Math.PI;
+    let o2 = o1/2.0;
+    if (phi > o2){
+        phi -= o1;
+        theta = -theta;
+    }
+    if (phi < -o2){
+        phi += o1;
+        theta = -theta;
+    }
+    return [theta, phi]
 }

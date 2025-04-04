@@ -38,6 +38,25 @@ export class SceneControlPhasedArray extends SceneControl{
         this.create_colormap_selector(CMKEYATTEN, 'inferno_r');
         this.canvasPhase = this.find_element('geometry-phase-canvas');
         this.canvasAtten = this.find_element('geometry-magnitude-canvas');
+        this.install_hover_item(this.canvasAtten, (i) => `${this.pa.vectorAtten[i].toFixed(2)} dB`);
+        this.install_hover_item(this.canvasPhase, (i) => `${(this.pa.vectorPhase[i]*180/Math.PI).toFixed(2)} deg`);
+    }
+    install_hover_item(canvas, callback){
+        this.parent.create_canvas_hover(canvas);
+        canvas.addEventListener('mousemove', (e) => {
+            let i = null;
+            let text = "&nbsp;";
+            if (e.isTrusted && this.pa !== null){
+                const f = canvas.index_from_event;
+                if (f !== undefined) i = f(e);
+            }
+            if (i !== null){
+                const geo = this.pa.geometry;
+                const t = callback(i);
+                text = `Element[${i}] (${geo.x[i].toFixed(2)}, ${geo.y[i].toFixed(2)}): ${t}`
+            }
+            canvas.hover_container.innerHTML = text;
+        });
     }
     add_to_queue(queue){
         const geo = this.parent.geometryControl;
@@ -142,9 +161,29 @@ export class SceneControlFarfield extends SceneControl{
             'farfield-scale',
         ]);
         this.ff = null;
-        this.dirMax = this.find_element('directivity-max', false);
+        this.dirMax = null;
+        this.eleMax = this.find_element('directivity-max', false);
         this.create_colormap_selector(CMKEYFARFIELD, 'viridis');
         this.canvas = this.find_element('farfield-canvas');
+        this.parent.create_canvas_hover(this.canvas);
+
+        this.canvas.addEventListener('mousemove', (e) => {
+            const canvas = this.canvas;
+            const f = canvas.index_from_event;
+            const ff = this.ff
+            let text = "HI";
+            if (f !== undefined && ff !== null && ff.dirMax != null){
+                const [it, ip] = f(e);
+                if (ip != null){
+                    const theta = ff.theta[it]*180/Math.PI;
+                    const phi = ff.phi[ip]*180/Math.PI;
+                    const ff1 = 10*Math.log10(ff.farfield_total[ip][it]/ff.maxValue);
+                    const ff2 = ff1 + 10*Math.log10(ff.dirMax);
+                    text = `(${theta.toFixed(2)}, ${phi.toFixed(2)}): ${ff2.toFixed(2)} dBi (${ff1.toFixed(2)} dB)`;
+                }
+            }
+            this.canvas.hover_container.innerHTML = text;
+        });
     }
     add_to_queue(queue){
         const arrayControl = this.parent.arrayControl;
@@ -165,18 +204,14 @@ export class SceneControlFarfield extends SceneControl{
         }
         if (needsRecalc){
             queue.add_iterator('Calculating farfield...', () => {
+                this.dirMax = null;
                 return this.ff.calculator_loop(arrayControl.pa)
             });
-            if (this.dirMax !== null){
-                queue.add("Calculating directivity...", () => {
-                    let d = this.ff.compute_directivity();
-                    this.dirMax.innerHTML = `Directivity: ${(10*Math.log10(d)).toFixed(2)} dB`;
-                });
-            }
             needsRescale = true;
         }
         if (needsRescale){
             queue.add('Rescaling farfield...', () => {
+                if (this.eleMax !== null) this.eleMax.innerHTML = `Directivity: ${(10*Math.log10(this.ff.dirMax)).toFixed(2)} dB`;
                 this.ff.rescale_magnitude(this.find_element('farfield-scale').value)
                 this.clear_changed('farfield-scale');
             });

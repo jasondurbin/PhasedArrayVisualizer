@@ -1,5 +1,5 @@
 
-:root {
+:root{
     --bg-color-dark: #121212;
     --text-color-dark: #AAA;
     --canvas-border-color-dark: #000;
@@ -24,7 +24,7 @@
     --theme-color-light: #333;
     --shadow-light: #0003;
 }
-:root.dark {
+:root.dark{
     --bg-color: var(--bg-color-dark);
     --text-color: var(--text-color-dark);
     --input-bg-color: var(--input-bg-color-dark);
@@ -37,7 +37,7 @@
     --theme-color: var(--theme-color-dark);
     --shadow: var(--shadow-dark);
 }
-:root.light {
+:root.light{
     --bg-color: var(--bg-color-light);
     --text-color: var(--text-color-light);
     --input-bg-color: var(--input-bg-color-light);
@@ -50,8 +50,8 @@
     --theme-color: var(--theme-color-light);
     --shadow: var(--shadow-light);
 }
-@media (prefers-color-scheme: dark) {
-    :root.auto {
+@media (prefers-color-scheme: dark){
+    :root.auto{
         --bg-color: var(--bg-color-dark);
         --text-color: var(--text-color-dark);
         --input-bg-color: var(--input-bg-color-dark);
@@ -65,8 +65,8 @@
         --shadow: var(--shadow-dark);
     }
 }
-@media (prefers-color-scheme: light) {
-    :root.auto {
+@media (prefers-color-scheme: light){
+    :root.auto{
         --bg-color: var(--bg-color-light);
         --text-color: var(--text-color-light);
         --input-bg-color: var(--input-bg-color-light);
@@ -80,7 +80,7 @@
         --shadow: var(--shadow-light);
     }
 }
-body {
+body{
     margin: 0;
     padding: 0;
     display: flex;
@@ -93,14 +93,14 @@ body {
     background-color: var(--bg-color);
     color: var(--text-color);
 }
-a {
+a{
     color: var(--link-color);
     text-decoration: none;
 }
 a:hover{
     text-decoration: underline;
 }
-.theme-toggle {
+.theme-toggle{
     background-color: var(--theme-bg-color);
     color: var(--theme-color);
     padding: 5px;
@@ -116,7 +116,7 @@ a:hover{
 }
 input,
 textarea,
-select {
+select{
     background-color: var(--input-bg-color);
     color: var(--text-color);
     border: 1px solid var(--input-border-color);
@@ -127,7 +127,7 @@ select {
     width: 200px;
     height: 40px;
 }
-#pa-progress {
+#pa-progress{
     width: 200px;
     display: block;
 }
@@ -136,23 +136,26 @@ select {
     width: 200px;
     text-align: center;
 }
-.pa-update-div {
+.pa-update-div{
     width: 200px;
     margin: auto;
 }
-.text-group {
+.canvas-hover-div{
+    font-size: 0.8em;
+}
+.text-group{
     font-size: 16px;
     margin: 0px 0;
     width: 100%;
 }
-.main-container {
+.main-container{
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     justify-content: center;
     width: 100%;
 }
-.pa-settings {
+.pa-settings{
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
@@ -163,14 +166,14 @@ select {
 .pa-settings h3{
     margin: 4px;
 }
-.pa-settings > div {
+.pa-settings > div{
     background-color: var(--settings-bg-color);
     padding: 10px;
     border: 1px solid var(--settings-border-color);
     min-width: 170px;
     border-radius: 5px;
 }
-.form-group {
+.form-group{
     display: flex;
     gap: 10px;
     margin-top: 5px;
@@ -178,21 +181,21 @@ select {
 .form-group label{
     flex-grow: 1;
 }
-.canvas-container {
+.canvas-container{
     width: 30%;
     display: block;
     text-align: center;
 }
-.canvas-container h2 {
+.canvas-container h2{
     margin: 0;
 }
-.canvas-wrapper {
+.canvas-wrapper{
     position: relative;
     width: 100%;
     padding-top: 100%;
     box-sizing: border-box;
 }
-canvas {
+canvas{
     position: absolute;
     top: 0;
     left: 0;
@@ -202,26 +205,26 @@ canvas {
     box-shadow:3px 3px var(--shadow);
     box-sizing: border-box;
 }
-.canvas-header {
+.canvas-header{
     margin: 10px 0;
 }
-.canvas-footer {
+.canvas-footer{
     margin: 10px 0;
     text-align: right;
 }
-@media (max-width: 1024px) {
-    .main-container { flex-wrap: wrap; }
-    .canvas-container { width: 45%; }
-    .canvas-container:nth-child(3) { width: 90%; }
+@media (max-width: 1024px){
+    .main-container{ flex-wrap: wrap; }
+    .canvas-container{ width: 45%; }
+    .canvas-container:nth-child(3){ width: 90%; }
 }
-@media (max-width: 600px) {
-    .main-container {
+@media (max-width: 600px){
+    .main-container{
         flex-direction: column;
         gap: 0px;
     }
-    .canvas-container {
+    .canvas-container{
         box-sizing: border-box;
         width: 100%;
     }
-    .canvas-container:nth-child(3) { width: 100%; }
+    .canvas-container:nth-child(3){ width: 100%; }
 }

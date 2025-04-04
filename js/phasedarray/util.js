@@ -32,9 +32,16 @@ export function arange(start, stop, step){
     return Float32Array.from(a);
 }
 
-export function factorial_log(value){
-    if (value == 0) return 0.0;
-    if (value < 0) throw Error("Factorial of a negative number is unknown.");
+/**
+* Calculate factorial of a number in log form.
+*
+* @param {float} v
+*
+* @return {float}
+* */
+export function factorial_log(v){
+    if (v == 0) return 0.0;
+    if (v < 0) throw Error("Factorial of a negative number is unknown.");
     const a = arange(1, parseInt(value) + 1);
     let s = 0;
     for (let i = 0; i < a.length; i++) s += Math.log10(a[i]);
@@ -42,10 +49,24 @@ export function factorial_log(value){
 }
 
 /**
+* Calculate factorial of a number.
+*
+* @param {float} v
+*
+* @return {float}
+* */
+function factorial(v) {
+    if (v === 0) return 1;
+    let s = 1.0;
+    for (let i = 1; i <= v; i++) s *= i;
+    return s;
+}
+
+/**
 * Normalizes input dimensions to be between [-m, m].
 *
 * @param {Float32Array} x
-* @param {float} m (option, default=0.5)
+* @param {float} m (optional) Normalization bounds (default=0.5)
 *
 * @return {Float32Array}
 * */
@@ -55,4 +76,68 @@ export function normalize_input(x, m){
     const minX = Math.min(...x);
     const den = (maxX - minX)/(m*2);
     return Float32Array.from({'length': x.length}, (_, i) => (x[i] - minX)/den - m);
+}
+/**
+* Gamma function.
+*
+* @param {float} z
+*
+* @return {float}
+* */
+export function gamma(z){
+    const g = 7;
+    const p = [
+        0.99999999999980993,
+        676.5203681218851,
+        -1259.1392167224028,
+        771.32342877765313,
+        -176.61502916214059,
+        12.507343278686905,
+        -0.13857109526572012,
+        9.9843695780195716e-6,
+        1.5056327351493116e-7,
+    ];
+    if (z < 0.5) return Math.PI / (Math.sin(Math.PI*z)*gamma(1 - z));
+    else {
+        z -= 1;
+        let x = p[0];
+        for (let i = 1; i < g + 2; i++) x += p[i] / (z + i);
+        const t = z + g + 0.5;
+        return Math.sqrt(2*Math.PI)*Math.pow(t, z + 0.5)*Math.exp(-t)*x;
+    }
+  }
+
+/**
+* Create an array of ones.
+*
+* @param {int} len
+*
+* @return {Float32Array}
+* */
+export function ones(len){ return Float32Array.from({length: len}, () => 1); }
+
+/**
+* Calculate the zero-order Modified Bessel function.
+*
+* @param {float} x
+* @param {int} maxIter (optional) Max iteration (default=50)
+* @param {float} tolerance (optional) Calculation tolerance (default=1e-9)
+*
+* @return {float}
+* */
+export function bessel_modified_0(x, maxIter, tolerance){
+    if (maxIter === undefined) maxIter = 50;
+    if (tolerance === undefined) tolerance = 1e-9;
+    let s = 0;
+    for (let i = 0; i <= maxIter; i++){
+        let t = (1/(factorial(i))*(x/2)**i)**2;
+        s += t;
+        if (Math.abs(t) <= tolerance) break;
+    }
+    return 1 + s;
+}
+
+export function chebyshev_polynomial(kind, x){
+    if (x <= -1) return Math.cos(kind*Math.acos(x));
+    return Math.cosh(kind*Math.acosh(x));
 }

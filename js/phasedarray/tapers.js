@@ -1,25 +1,32 @@
-// https://www.researchgate.net/publication/316281181_Catalog_of_Window_Taper_Functions_for_Sidelobe_Control
-import {arange, factorial_log, normalize_input} from "./util.js";
+/**
+* This file contains a bunch of taper functions.
+*
+* Many of these functions are from:
+* https://www.researchgate.net/publication/316281181_Catalog_of_Window_Taper_Functions_for_Sidelobe_Control
+* */
+import {bessel_modified_0, linspace, normalize_input, ones} from "./util.js";
 
-export class UniformTaper{
+export class Uniform{
     static title = 'Uniform';
     static args = [];
     static controls = {
         'taper-x': {'title': null},
     };
-    calculate_weights(x){
-        const v = new Float32Array(x.length);
-        for (let i = 0; i < x.length; i++) v[i] = 1.0;
-        return v;
-    }
+    calculate_weights(x){ return ones(x.length); }
 }
 
-export class TrianglePedestal extends UniformTaper{
+export class TrianglePedestal extends Uniform{
     static title = 'Triangle on a Pedestal';
     static args = ['taper-x-par-1'];
     static controls = {
-        ...UniformTaper.controls,
-        'taper-x-par-1': {'title': "Pedestal", 'type': "float", 'default': 0.0, 'min': 0.0, 'max': 1.0},
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Pedestal",
+            'type': "float",
+            'default': 0.0,
+            'min': 0.0,
+            'max': 1.0
+        },
     };
     constructor(pedestal){
         super();
@@ -34,13 +41,23 @@ export class TrianglePedestal extends UniformTaper{
     }
 }
 
-export class TaylorNBar extends UniformTaper{
+export class TaylorNBar extends Uniform{
     static title = 'Taylor N-Bar';
     static args = ['taper-x-par-1', 'taper-x-par-2'];
     static controls = {
-        ...UniformTaper.controls,
-        'taper-x-par-1': {'title': "N Bar", 'type': "int", 'default': 5, 'min': 1},
-        'taper-x-par-2': {'title': "SLL", 'type': "float", 'default': 25.0, 'min': 13.0}
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "N Bar",
+            'type': "int",
+            'default': 5,
+            'min': 1
+        },
+        'taper-x-par-2': {
+            'title': "SLL",
+            'type': "float",
+            'default': 25.0,
+            'min': 13.0
+        }
     };
     constructor(nbar, sll){
         super();
@@ -48,29 +65,92 @@ export class TaylorNBar extends UniformTaper{
         this.sll = Math.max(13, Math.abs(sll));
     }
     calculate_weights(x){
-        let v = super.calculate_weights(x);
-        if (this.nbar == 1 && this.sll == 13) return v;
         const nbar = this.nbar;
-        let r = 10**(this.sll/20);
-        let a = Math.acosh(r)/Math.PI;
-        let sigma = nbar**2/(a**2 + (this.nbar - 0.5)**2);
-        let m = arange(1, nbar);
-        let f = Float32Array.from({length: m.length}, () => 0);
+        const sll = this.sll;
+        if (nbar == 1 && sll == 13) return ones(x.length);
+        const nu = 10**(this.sll/20.);
+        const A = Math.acosh(nu)/Math.PI;
+        const A2 = A**2;
+        const sigma2 = nbar**2/(A2 + (nbar - 0.5)**2);
 
-        let f1 = 2*factorial_log(nbar - 1)
-        for (let i = 0; i < m.length; i++){
-            let f2 = factorial_log(nbar + 1 + m[i]);
-            let f3 = factorial_log(nbar - 1 + m[i]);
-            f[i] = f1 - (f2 + f3);
+        const _f = (m) => {
+            const c1 = (m**2/sigma2);
+            let f1 = 1.0;
+            for (let n = 1; n < nbar; n++){
+                f1 *= (1 - c1/(A2 + (n - 0.5)**2));
+            }
+            let f2 = 1.0;
+            for (let n = 1; n < nbar; n++){
+                if (n == m) continue;
+                f2 *= (1 - m**2/n**2);
+            }
+            return -1*((-1)**m/2)*f1/f2;
         }
-
-        console.log(r, a);
-        for (let i = 0; i < x.length; i++) v[i] = 1.0;
-        return v;
+        const pi2 = 2*Math.PI;
+        return Float32Array.from(normalize_input(x), (e) => {
+            let a1 = 0.0;
+            for (let m = 1; m < nbar; m++) a1 += _f(m)*Math.cos(pi2*m*e);
+            return 1 + 2*a1;
+        });
     }
 }
 
-export class Parzen extends UniformTaper{
+export class TaylorModified extends Uniform{
+    static title = 'Taylor Modified';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "SLL",
+            'type': "float",
+            'default': 25.0,
+            'min': 13.0
+        }
+    };
+    constructor(sll){
+        super();
+        this.sll = Math.max(13, Math.abs(sll));
+    }
+    calculate_weights(x){
+        const s = 10**(this.sll/20.0)/4.60333;
+        if (s <= 1) return ones(x.length);
+        const err = 1e-6;
+
+        let B = linspace(0.00001, 10, 101);
+        let counter = 0;
+        while (1){
+            if (counter > 50) {
+                B = B[0];
+                break;
+            }
+            counter++;
+            let v = Float32Array.from(B, (o) => Math.sinh(Math.PI*o)/(Math.PI*o));
+            let e = Float32Array.from(v, (o) => Math.abs(o - s));
+
+            let minE = Infinity;
+            let minI = 0;
+            for (let i = 0; i < e.length; i++){
+                if (e[i] < minE){
+                    minE = e[i];
+                    minI = i;
+                }
+            }
+            if (minE < err) {
+                B = B[minI];
+                break;
+            }
+            let o1, o2;
+            if (minI == 0) o1 = 1e-9;
+            else o1 = B[minI - 1];
+            if (minI == v.length - 1) o2 = B[B.length-1] + 1.0;
+            else o2 = B[minI + 1];
+            B = linspace(o1, o2, 11);
+        }
+        return Float32Array.from(normalize_input(x), (e) => bessel_modified_0(Math.PI*B*Math.sqrt(1 - (2*e)**2)));
+    }
+}
+
+export class Parzen extends Uniform{
     static title = 'Parzen';
     static args = [];
     calculate_weights(x){
@@ -79,18 +159,29 @@ export class Parzen extends UniformTaper{
             const t = Math.abs(e);
             if (t <= 0.25) return s*(1 - 24*t**2 + 48*t**3);
             else if (t <= 0.5) return s*(2 - 12*t + 24*t**2 - 16*t**3);
-            else return 0.0;
+            return 0.0;
         });
     }
 }
 
-export class ParzenAlgebraic extends UniformTaper{
+export class ParzenAlgebraic extends Uniform{
     static title = 'Parzen Algebraic';
     static args = ['taper-x-par-1', 'taper-x-par-1'];
     static controls = {
-        ...UniformTaper.controls,
-        'taper-x-par-1': {'title': "Gamma", 'type': "float", 'default': 1.0, 'min': 0.001, 'max': 1.0},
-        'taper-x-par-2': {'title': "u", 'type': "float", 'default': 2.0, 'min': 0.001},
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Gamma",
+            'type': "float",
+            'default': 1.0,
+            'min': 0.001,
+            'max': 1.0
+        },
+        'taper-x-par-2': {
+            'title': "u",
+            'type': "float",
+            'default': 2.0,
+            'min': 0.001
+        },
     };
     constructor(gamma, u){
         super();
@@ -106,7 +197,7 @@ export class ParzenAlgebraic extends UniformTaper{
     }
 }
 
-export class Welch extends UniformTaper{
+export class Welch extends Uniform{
     static title = 'Welch';
     static args = [];
     calculate_weights(x){
@@ -114,12 +205,17 @@ export class Welch extends UniformTaper{
     }
 }
 
-export class Connes extends UniformTaper{
+export class Connes extends Uniform{
     static title = 'Connes';
     static args = ['taper-x-par-1'];
     static controls = {
-        ...UniformTaper.controls,
-        'taper-x-par-1': {'title': "Alpha", 'type': "float", 'default': 1.0, 'min': 0.001},
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Alpha",
+            'type': "float",
+            'default': 1.0,
+            'min': 0.001
+        },
     };
     constructor(alpha){
         super();
@@ -134,7 +230,7 @@ export class Connes extends UniformTaper{
     }
 }
 
-export class SinglaSingh extends UniformTaper{
+export class SinglaSingh extends Uniform{
     static title = 'Singla-Singh (order 1)';
     static args = [];
     calculate_weights(x){
@@ -142,12 +238,17 @@ export class SinglaSingh extends UniformTaper{
     }
 }
 
-export class Lanczos extends UniformTaper{
+export class Lanczos extends Uniform{
     static title = 'Lanczos';
     static args = ['taper-x-par-1'];
     static controls = {
-        ...UniformTaper.controls,
-        'taper-x-par-1': {'title': "L", 'type': "float", 'default': 2.0, 'min': 0.001},
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "L",
+            'type': "float",
+            'default': 2.0,
+            'min': 0.001
+        },
     };
     constructor(l){
         super();
@@ -165,30 +266,36 @@ export class Lanczos extends UniformTaper{
 export class SincLobe extends Lanczos{
     static title = 'Sinc Lobe';
     static args = [];
-    static controls = UniformTaper.controls;
+    static controls = Uniform.controls;
     constructor(){ super(1.0); }
 }
 
 export class Fejer extends Lanczos{
     static title = 'Fejér';
     static args = [];
-    static controls = UniformTaper.controls;
+    static controls = Uniform.controls;
     constructor(){ super(2.0); }
 }
 
 export class delaVallePoussin extends Lanczos{
     static title = 'de la Vallée Poussin';
     static args = [];
-    static controls = UniformTaper.controls;
+    static controls = Uniform.controls;
     constructor(){ super(4.0); }
 }
 
-export class RaisedCosine extends UniformTaper{
+export class RaisedCosine extends Uniform{
     static title = 'Raised Cosine';
     static args = ['taper-x-par-1'];
     static controls = {
-        ...UniformTaper.controls,
-        'taper-x-par-1': {'title': "Alpha", 'type': "float", 'default': 0.75, 'min': 0.5, 'max': 1.0},
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Pedestal",
+            'type': "float",
+            'default': 0.75,
+            'min': 0.0,
+            'max': 1.0
+        },
     };
     constructor(alpha){
         super();
@@ -205,23 +312,28 @@ export class RaisedCosine extends UniformTaper{
 export class Hamming extends RaisedCosine{
     static title = 'Hamming';
     static args = [];
-    static controls = UniformTaper.controls;
+    static controls = Uniform.controls;
     constructor(){ super(25/46); }
 }
 
 export class Hann extends RaisedCosine{
     static title = 'Hann';
     static args = [];
-    static controls = UniformTaper.controls;
+    static controls = Uniform.controls;
     constructor(){ super(0.5); }
 }
 
-export class GeneralizedHamming extends UniformTaper{
+export class GeneralizedHamming extends Uniform{
     static title = 'Generalized Hamming';
     static args = ['taper-x-par-1'];
     static controls = {
-        ...UniformTaper.controls,
-        'taper-x-par-1': {'title': "v", 'type': "float", 'default': 0.0, 'min': -0.5},
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "v",
+            'type': "float",
+            'default': 0.0,
+            'min': -0.5
+        },
     };
     constructor(v){
         super();
@@ -237,21 +349,518 @@ export class GeneralizedHamming extends UniformTaper{
     }
 }
 
+export class RaisedPowerofCosine extends Uniform{
+    static title = 'Raised Power-of-Cosine';
+    static args = ['taper-x-par-1', 'taper-x-par-2'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Power",
+            'type': "float",
+            'default': 1.0,
+            'min': 0
+        },
+        'taper-x-par-2': {
+            'title': "Pedestal",
+            'type': "float",
+            'default': 0.0,
+            'min': 0,
+            'max': 1.0
+        },
+    };
+    constructor(m, pedestal){
+        super();
+        this.m = Math.max(0, m);
+        this.pedestal = Math.min(1.0, Math.max(0, pedestal));
+    }
+    calculate_weights(x){
+        const a = this.pedestal;
+        const a0 = 1 - a;
+        return Float32Array.from(normalize_input(x), (e) => a + a0*Math.cos(e*Math.PI)**this.m);
+    }
+}
+
+export class ParzenCosine extends Uniform{
+    static title = 'Parzen Cosine';
+    static args = ['taper-x-par-1', 'taper-x-par-2'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Gamma",
+            'type': "float",
+            'default': 0.5,
+            'min': 0.0001,
+            'max': 1.0
+        },
+        'taper-x-par-2': {
+            'title': "Power",
+            'type': "float",
+            'default': 1.0,
+            'min': 0
+        },
+    };
+    constructor(gamma, m){
+        super();
+        this.m = Math.max(0, m);
+        this.gamma = Math.min(1.0, Math.max(0, gamma));
+    }
+    calculate_weights(x){
+        const g = this.gamma;
+        const m = this.m;
+        const gpi = g*Math.PI;
+        return Float32Array.from(normalize_input(x), (e) => 1+Math.cos(gpi*Math.abs(2*e)**m));
+    }
+}
+
+export class ParzenGeometric extends Uniform{
+    static title = 'Parzen Geometric';
+    static args = ['taper-x-par-1', 'taper-x-par-2'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Alpha",
+            'type': "float",
+            'default': 1.5,
+            'min': 0.0,
+        },
+        'taper-x-par-2': {
+            'title': "Power",
+            'type': "float",
+            'default': 3.0,
+            'min': 0
+        },
+    };
+    constructor(alpha, r){
+        super();
+        this.r = Math.max(0, Math.abs(r));
+        this.alpha = Math.max(0, Math.abs(alpha));
+    }
+    calculate_weights(x){
+        const a2 = 2*this.alpha;
+        const r = this.r;
+        return Float32Array.from(normalize_input(x), (e) => 1/(1 + Math.abs(a2*e)**r));
+    }
+}
+
+export class Bohman extends Uniform{
+    static title = 'Parzen Cosine';
+    calculate_weights(x){
+        const p24 = Math.PI**2/4;
+        const p4 = Math.PI/4;
+        const p2 = 2*Math.PI;
+        return Float32Array.from(normalize_input(x), (e) => {
+            const t = Math.abs(e);
+            const pit = p2*t;
+            return p24*(1 - 2*t)*Math.cos(pit) + p4*Math.sin(pit)
+        });
+    }
+}
+
+export class Trapezoid extends Uniform{
+    static title = 'Trapezoid';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Offset",
+            'type': "float",
+            'default': 0.1,
+            'min': 0.0,
+            'max': 0.5,
+            'desc': "Offset from center when trapezoid starts."
+        },
+    };
+    constructor(offset){
+        super();
+        this.offset = Math.min(0.5, Math.max(0, offset));
+    }
+    calculate_weights(x){
+        const a = this.offset;
+        const sc = 2/(1 + 2*a);
+        const ad = 2/(1 - (2*a)**2);
+        return Float32Array.from(normalize_input(x), (e) => {
+            const t = Math.abs(e);
+            if (t <= a) return sc;
+            if (t <= 0.5) return (1 - 2*t)*ad;
+            return 0.0
+        });
+    }
+}
+
+export class Tukey extends Trapezoid{
+    static title = 'Tukey';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Offset",
+            'type': "float",
+            'default': 0.1,
+            'min': 0.0,
+            'max': 0.5,
+            'desc': "Offset from center when curve starts."
+        },
+    };
+    calculate_weights(x){
+        const a = this.offset;
+        if (a >= 0.5) return ones(x.length);
+
+        const sc = 2/(0.5 - a);
+        const ad1 = 1/(0.5 - a);
+        const ad2 = 1/(0.5 - a);
+        return Float32Array.from(normalize_input(x), (e) => {
+            const t = Math.abs(e);
+            if (t <= a) return sc;
+            if (t <= 0.5) return (1 + Math.cos(Math.PI*(t - a)*ad1))*ad2;
+            return 0.0
+        });
+    }
+}
+
+export class BartlettHann extends Uniform{
+    static title = 'Bartlett-Hann';
+    calculate_weights(x){
+        const a0 = 0.62;
+        const a1 = 0.48;
+        const a2 = 0.38;
+        const pi2 = 2*Math.PI;
+        return Float32Array.from(normalize_input(x), (e) => 2*(a0 - a1*Math.abs(e) + a2*Math.cos(pi2*e)));
+    }
+}
+
+export class Blackman extends Uniform{
+    static title = 'Blackman';
+    calculate_weights(x){
+        const pi2 = 2*Math.PI;
+        const pi4 = 4*Math.PI;
+        const a10 = 9240/7938;
+        const a20 = 1430/7938;
+        return Float32Array.from(normalize_input(x), (e) => (1 + a10*Math.cos(pi2*e) + a20*Math.cos(pi4*e)));
+    }
+}
+
+export class Exponential extends Uniform{
+    static title = 'Exponential';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Alpha",
+            'type': "float",
+            'default': 2.0,
+            'min': 0,
+            'desc': "Decay parameter"
+        },
+    };
+    constructor(alpha){
+        super();
+        this.alpha = Math.max(0.0, alpha);
+    }
+    calculate_weights(x){
+        const a2 = -2*this.alpha;
+        return Float32Array.from(normalize_input(x), (e) => Math.exp(a2*Math.abs(e)));
+    }
+}
+
+export class HanningPoisson extends Uniform{
+    static title = 'Hanning-Poisson';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Alpha",
+            'type': "float",
+            'default': 0.5,
+            'min': 0,
+            'desc': "Decay parameter."
+        },
+    };
+    constructor(alpha){
+        super();
+        this.alpha = Math.max(0.0, alpha);
+    }
+    calculate_weights(x){
+        const a2 = -2*this.alpha;
+        const pi2 = 2*Math.PI;
+        return Float32Array.from(normalize_input(x), (e) => Math.exp(a2*Math.abs(e))*(1 + Math.cos(pi2*e)));
+    }
+}
+
+export class Gaussian extends Uniform{
+    static title = 'Gaussian';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Alpha",
+            'type': "float",
+            'default': 2.0,
+            'min': 0,
+            'desc': "Number of standard deviations at which truncation occurs."
+        },
+    };
+    constructor(alpha){
+        super();
+        this.alpha = Math.max(0.0, alpha);
+    }
+    calculate_weights(x){
+        const a2 = -2*this.alpha**2;
+        return Float32Array.from(normalize_input(x), (e) => Math.exp(a2*e**2));
+    }
+}
+
+export class ParzenExponential extends Uniform{
+    static title = 'Parzen Exponential';
+    static args = ['taper-x-par-1', 'taper-x-par-2'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Alpha",
+            'type': "float",
+            'default': 1.5,
+            'min': 0,
+            'desc': "Decay parameter."
+        },
+        'taper-x-par-2': {
+            'title': "r",
+            'type': "float",
+            'default': 3.0,
+            'min': 0,
+            'desc': "Exponential power."
+        },
+    };
+    constructor(alpha, r){
+        super();
+        this.alpha = Math.max(0.0, alpha);
+        this.r = Math.max(0.0, r);
+    }
+    calculate_weights(x){
+        const a2 = 2*this.alpha;
+        const r = this.r
+        return Float32Array.from(normalize_input(x), (e) => Math.exp(-1*Math.abs(a2*e)**r));
+    }
+}
+
+export class DolphChebyshev extends Uniform{
+    static title = 'Dolph-Chebyshev';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "SLL",
+            'type': "float",
+            'default': 30,
+            'min': 13,
+            'desc': "Desired sidelobe level."
+        },
+    };
+    constructor(sll){
+        super();
+        this.sll = Math.sll(13, Math.abs(sll));
+    }
+    calculate_weights(x){
+        // TODO: Come back to and finish.
+        throw Error("in work.");
+        const nu = 10**(this.sll/20.0);
+        return Float32Array.from(normalize_input(x), (e) => Math.exp(a2*e**2));
+    }
+}
+
+export class Cauchy extends Uniform{
+    static title = 'Cauchy';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Alpha",
+            'type': "float",
+            'default': 3.0,
+            'min': 0,
+            'desc': "Decay parameter."
+        },
+    };
+    constructor(alpha){
+        super();
+        this.alpha = Math.max(0.0, alpha);
+    }
+    calculate_weights(x){
+        const a2 = 2*this.alpha;
+        return Float32Array.from(normalize_input(x), (e) => 1/(1 + (a2 * e)**2));
+    }
+}
+
+export class KaiserBessel extends Uniform{
+    static title = 'Kaiser Bessel';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Alpha",
+            'type': "float",
+            'default': 1.25,
+            'min': 0,
+        },
+    };
+    constructor(alpha){
+        super();
+        this.alpha = Math.max(0.0, alpha);
+    }
+    calculate_weights(x){
+        const api = Math.PI*this.alpha;
+        return Float32Array.from(normalize_input(x), (e) => bessel_modified_0(api*Math.sqrt(1 - (2*e)**2)));
+    }
+}
+
+export class Cosh extends Uniform{
+    static title = 'Cosh';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Alpha",
+            'type': "float",
+            'default': 1.25,
+            'min': 0,
+        },
+    };
+    constructor(alpha){
+        super();
+        this.alpha = Math.max(0.0, alpha);
+    }
+    calculate_weights(x){
+        const api = Math.PI*this.alpha;
+        return Float32Array.from(normalize_input(x), (e) => Math.cosh(api*Math.sqrt(1 - (2*e)**2)));
+    }
+}
+
+export class AvciNacaroglu extends Uniform{
+    static title = 'Avci-Nacaroglu Exponential';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Alpha",
+            'type': "float",
+            'default': 1.25,
+            'min': 0,
+        },
+    };
+    constructor(alpha){
+        super();
+        this.alpha = Math.max(0.0, alpha);
+    }
+    calculate_weights(x){
+        const api = Math.PI*this.alpha;
+        return Float32Array.from(normalize_input(x), (e) => Math.exp(api*(Math.sqrt(1 - (2*e)**2) - 1)));
+    }
+}
+
+export class Knab extends Uniform{
+    static title = 'Knab';
+    static args = ['taper-x-par-1'];
+    static controls = {
+        ...Uniform.controls,
+        'taper-x-par-1': {
+            'title': "Alpha",
+            'type': "float",
+            'default': 1.5,
+            'min': 0,
+        },
+    };
+    constructor(alpha){
+        super();
+        this.alpha = Math.max(0.0, alpha);
+    }
+    calculate_weights(x){
+        const api = Math.PI*this.alpha;
+        return Float32Array.from(normalize_input(x), (e) => {
+            let d = Math.sqrt(1 - (2*e)**2);
+            if (d == 0) return 0.0;
+            return Math.sinh(api*d)/d;
+        });
+    }
+}
+
+export class Vorbis extends Uniform{
+    static title = 'Vorbis';
+    calculate_weights(x){
+        const p2 = Math.PI/2;
+        return Float32Array.from(normalize_input(x), (e) => Math.sin(p2*Math.cos(Math.PI*e)**2));
+    }
+}
+
+export class FlatTop5 extends Uniform{
+    static title = 'Flat-Top L=5';
+    calculate_weights(x){
+        const p2 = Math.PI*2;
+        const a = [
+            0.21557895,
+            0.41663158,
+            0.277263158,
+            0.083578947,
+            0.006947368
+        ]
+        return Float32Array.from(normalize_input(x), (e) => {
+            let s = 0;
+            for (let i = 0; i < 5; i++) s += a[i]*Math.cos(p2*i*e)
+            return s;
+        });
+    }
+}
+
+export class FlatTop3 extends Uniform{
+    static title = 'Flat-Top L=3';
+    calculate_weights(x){
+        const p2 = Math.PI*2;
+        const a = [
+            0.2811,
+            0.5209,
+            0.1980
+        ]
+        return Float32Array.from(normalize_input(x), (e) => {
+            let s = 0;
+            for (let i = 0; i < 3; i++) s += a[i]*Math.cos(p2*i*e)
+            return s;
+        });
+    }
+}
+
 export const Tapers = [
-    UniformTaper,
-    TrianglePedestal,
+    Uniform,
     TaylorNBar,
+    TaylorModified,
     RaisedCosine,
+    RaisedPowerofCosine,
+    TrianglePedestal,
+    Trapezoid,
+    Exponential,
+    Gaussian,
+    KaiserBessel,
+    Cauchy,
+    Cosh,
+    Tukey,
     Hamming,
     GeneralizedHamming,
     Hann,
+    HanningPoisson,
     Parzen,
     Connes,
     Welch,
     ParzenAlgebraic,
+    ParzenCosine,
+    ParzenExponential,
+    ParzenGeometric,
     SinglaSingh,
     Lanczos,
     SincLobe,
     Fejer,
     delaVallePoussin,
+    Bohman,
+    BartlettHann,
+    Blackman,
+    AvciNacaroglu,
+    Knab,
+    Vorbis,
+    FlatTop3,
+    FlatTop5,
 ]

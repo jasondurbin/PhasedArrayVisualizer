@@ -1,4 +1,4 @@
-import {linspace} from "./util.js";
+import {linspace} from "../util.js";
 
 export class Geometry{
     static args = [];

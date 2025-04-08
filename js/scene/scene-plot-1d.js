@@ -8,18 +8,38 @@ export class ScenePlot1D{
         canvas.width = canvas.width*this.scale;
         canvas.height = canvas.height*this.scale;
         this.cmap = cmap;
+        const pe = canvas.parentElement.parentElement;
+        this.legend = pe.querySelector(".canvas-legend");
+
+        this.legend.addEventListener('click', (e) => {
+            e.target.classList.toggle('disabled');
+            this.redrawWaiting = true;
+        });
+        const _draw_frame = () => {
+            const rd = this.redrawWaiting || cmap.changed;
+            if (rd && this.xGrid !== undefined){
+                this.draw();
+                console.log("Updating 1D plot...");
+            }
+            requestAnimationFrame(_draw_frame)
+        }
+        _draw_frame();
+    }
+    legend_items(){
+        return this.legend.querySelectorAll(".legend-item");
     }
     reset(){
         this.scale = 5;
-        this.padding = 10;
+        this.padding = 5;
         this.axesFontSize = 5;
-        this.textPadding = 5;
+        this.textPadding = 2;
 
         this.xLabel = undefined;
         this.yLabel = undefined;
         this.xGrid = undefined;
 
         this._data = []
+        this.redrawWaiting = true;
     }
     get cPadding(){ return this.padding*this.scale; }
     get cAxesFontSize(){ return this.axesFontSize*this.scale; }
@@ -31,52 +51,31 @@ export class ScenePlot1D{
     set_xgrid(start, stop, count){ this.xGrid = linspace(start, stop, count); }
     set_ygrid(start, stop, count){ this.yGrid = linspace(start, stop, count); }
     create_farfield_cartesian(){
-        const canvas = this.canvas;
-        const ctx = canvas.getContext('2d');
-
         this.reset();
-        ctx.reset();
-        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
         this.set_xlabel('Theta (deg)');
         this.set_ylabel('Relative Directivity (dB)');
         this.set_xgrid(-90, 90, 13);
         this.set_ygrid(-40, 0, 11);
     }
-    add_data(x, y, label){
+    add_data(x, y, item){
+        this.redrawWaiting = true;
         this._data.push({
             'x': x,
             'y': y,
-            'label': label,
-        })
-    }
-    _clip(xs, ys) {
-        return [xs, ys];
-        const rx = Float32Array.from(xs);
-        const ry = Float32Array.from(ys);
-        const xMin = this.xGrid[0];
-        const xMax = this.xGrid[this.xGrid.length - 1];
-        const yMin = this.yGrid[0];
-        const yMax = this.yGrid[this.yGrid.length - 1];
-
-        const _within_bounds = (x, y) => (x >= xMin && x <= xMax && y >= yMin && y <= yMax)
-
-        for (let i = 0; i < xs.length; i++) {
-            const x = xs[i];
-            const y = ys[i];
-            if (!_within_bounds(x, y)){
-                rx[i] = Math.min(xMax, Math.max(xMin, x));
-                ry[i] = Math.min(yMax, Math.max(yMin, y));
-            }
-        }
-        return [rx, ry];
+            'item': item,
+        });
+        return this._data.length - 1;
     }
     draw(){
+        const ctx = this.canvas.getContext('2d');
+        ctx.reset();
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.compute_grid_bounds();
         this.draw_xgrid();
         this.draw_ygrid();
         this.draw_data();
         this.draw_outline();
+        this.redrawWaiting = false;
     }
     compute_grid_bounds(){
         const textPadding = this.cTextPadding;
@@ -104,6 +103,9 @@ export class ScenePlot1D{
         this._ycBounds = [minY, this.cPadding]
         this._xcBounds = [minX, this.canvas.width - this.cPadding]
     }
+    data_color(i){
+        return this.cmap.cmap()(i)
+    }
     draw_data(){
         const sc = 180/Math.PI;
         const ctx = this._create_context();
@@ -129,9 +131,14 @@ export class ScenePlot1D{
         const _y = (y) => {
             return this._ycBounds[0] + (y - minY)/(maxY - minY)*(this._ycBounds[1] - this._ycBounds[0])
         }
+        this.cmap.changed = false;
         for (let i = 0; i < this._data.length; i++){
-            ctx.strokeStyle = cm(i);
             const e = this._data[i];
+            const item = e['item'];
+            const c = cm(i);
+            ctx.strokeStyle = c;
+            item.style.color = c;
+            if (item.classList.contains('disabled')) continue
             const x = Float32Array.from(e['x'], (x) => x*sc);
             const y = e['y'];
             ctx.beginPath();
@@ -172,7 +179,7 @@ export class ScenePlot1D{
         const minX = this._xcBounds[0];
 
         if (this.yLabel !== undefined){
-            ctx.textBaseline = 'middle';
+            ctx.textBaseline = 'top';
             ctx.textAlign = 'center';
             ctx.save();
             ctx.beginPath();

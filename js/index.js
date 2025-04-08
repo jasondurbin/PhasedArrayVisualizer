@@ -1,8 +1,10 @@
 import {SceneControlPhasedArray, SceneControlGeometry, SceneControlFarfield, SceneControlTaper} from "./index-scenes.js";
 import {SceneParent} from "./scene/scene-abc.js"
 import {SceneQueue} from "./scene/scene-queue.js";
+import {SceneTheme} from "./scene/scene-theme.js";
 
 window.addEventListener('load', () => {
+    const theme = new SceneTheme();
     const scene = new PhasedArrayScene('pa');
     scene.build_state_machine();
 });
@@ -12,6 +14,7 @@ window.addEventListener('load', () => {
  *
  * @param {string} prepend - Prepend used on HTML IDs.
  * */
+
 export class PhasedArrayScene extends SceneParent{
     constructor(prepend){
         super(prepend, ['refresh'])
@@ -35,7 +38,7 @@ export class PhasedArrayScene extends SceneParent{
     }
     create_canvas_hover(canvas){
         const p = canvas.parentElement.parentElement;
-        const h = p.querySelector(".canvas-header")
+        const h = p.querySelector(".canvas-header");
         const ele = document.createElement("div");
         ele.classList = "canvas-hover-div";
         ele.innerHTML = "&nbsp;";

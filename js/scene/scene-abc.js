@@ -1,5 +1,6 @@
 
-import {ColormapControl} from "../cmap/cmap.js";
+import {MeshColormapControl} from "../cmap/cmap-mesh.js";
+import {ListedColormapControl} from "../cmap/cmap-listed.js";
 
 export class SceneParent{
     constructor(prepend, controls){
@@ -42,8 +43,13 @@ export class SceneControl{
     }
     find_element(id, allowError){ return this.parent.find_element(id, allowError); }
     find_elements(elements){ return this.parent.find_elements(elements); }
-    create_colormap_selector(key, defaultSelection){
-        const cm = new ColormapControl(this.find_element(key), defaultSelection);
+    create_mesh_colormap_selector(key, defaultSelection){
+        const cm = new MeshColormapControl(this.find_element(key), defaultSelection);
+        this.colormap[key] = cm;
+        return cm;
+    }
+    create_listed_colormap_selector(key, defaultSelection){
+        const cm = new ListedColormapControl(this.find_element(key), defaultSelection);
         this.colormap[key] = cm;
         return cm;
     }

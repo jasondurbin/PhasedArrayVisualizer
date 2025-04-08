@@ -1,4 +1,4 @@
-import {linspace, adjust_theta_phi} from "./util.js";
+import {linspace, adjust_theta_phi} from "../util.js";
 
 export class FarfieldSpherical{
     constructor(thetaPoints, phiPoints){
@@ -15,12 +15,14 @@ export class FarfieldSpherical{
 
         this.farfield_total = new Array(this.phiPoints);
         this.farfield_log = new Array(this.phiPoints);
+        this.farfield_log_scale = new Array(this.phiPoints);
         this.maxValue = -Infinity;
         this.dirMax = null;
 
         for (let i = 0; i < this.phiPoints; i++){
             this.farfield_total[i] = new Float32Array(this.thetaPoints);
             this.farfield_log[i] = new Float32Array(this.thetaPoints);
+            this.farfield_log_scale[i] = new Float32Array(this.thetaPoints);
         }
     }
     *calculator_loop(pa){
@@ -82,13 +84,18 @@ export class FarfieldSpherical{
         }
         yield _yield('Calculating Directivity...');
         this.dirMax = this.compute_directivity();
+        yield _yield('Calculating Log...');
+        for (let ip = 0; ip < this.phiPoints; ip++){
+            for (let it = 0; it < this.thetaPoints; it++){
+                this.farfield_log[ip][it] = 10*Math.log10(this.farfield_total[ip][it]/this.maxValue);
+            }
+        }
     }
     rescale_magnitude(logMin){
         logMin = Math.max(Math.abs(Number(logMin)), 5);
         for (let ip = 0; ip < this.phiPoints; ip++){
             for (let it = 0; it < this.thetaPoints; it++){
-                const c = 10*Math.log10(this.farfield_total[ip][it]/this.maxValue);
-                this.farfield_log[ip][it] = (c + logMin)/logMin;
+                this.farfield_log_scale[ip][it] = (this.farfield_log[ip][it] + logMin)/logMin;
             }
         }
     }
@@ -108,9 +115,36 @@ export class FarfieldSpherical{
         for (let ip = 0; ip < this.phiPoints; ip++){
             this.colormap_vals[ip] = new Array(this.thetaPoints);
             for (let it = 0; it < this.thetaPoints; it++){
-                this.colormap_vals[ip][it] = colormap(this.farfield_log[ip][it]);
+                this.colormap_vals[ip][it] = colormap(this.farfield_log_scale[ip][it]);
             }
         }
+    }
+    create_1d_plot(plot1D){
+        plot1D.create_farfield_cartesian();
+        plot1D.legend_items().forEach((e) => {
+            let p = e.getAttribute('data-cut');
+            const phi = this.phi;
+            if (p === undefined) return;
+            p = Number(p)*Math.PI/180;
+
+            const mp = Float32Array.from(phi, (x) => Math.abs(x - p));
+            let mv = Infinity;
+            let mi = -1;
+
+            for (let i = 0; i < mp.length; i++){
+                if (mp[i] < mv){
+                    mv = mp[i];
+                    mi = i;
+                }
+            }
+            if (mi >= 0) {
+                plot1D.add_data(
+                    this.theta,
+                    this.farfield_log[mi],
+                    e,
+                );
+            }
+        });
     }
     draw_polar(canvas){
         const ctx = canvas.getContext('2d');
@@ -176,6 +210,15 @@ export class FarfieldSpherical{
 
         // delete the colormap values to clear memory.
         delete this.colormap_vals;
+    }
+    draw_phi_cut(canvas){
+        const ctx = canvas.getContext('2d');
+        ctx.reset();
+        const scale = 5;
+        canvas.width = canvas.width*scale;
+        canvas.height = canvas.height*scale;
+        ctx.translate(canvas.width/2, canvas.height/2);
+        ctx.scale(1.0, -1.0);
     }
     add_theta_grid(canvas, steps){
         if (steps === undefined) steps = 7;

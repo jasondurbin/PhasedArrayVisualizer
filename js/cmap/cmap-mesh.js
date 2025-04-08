@@ -1,34 +1,17 @@
-export const Colormaps = [
-    'viridis',
-    'inferno',
-    'rainbow',
-    'viridis_r',
-    'inferno_r',
-    'rainbow_r',
-]
-export class ColormapControl{
-    constructor(selector, defaultSelection){
-        this.changed = true;
-        this.selector = selector;
-        if (defaultSelection === undefined) defaultSelection = 'viridis';
-        this.defaultSelection = defaultSelection;
-        Colormaps.forEach((cm) => {
-            const ele = document.createElement('option');
-            ele.value = cm;
-            ele.innerHTML = cm;
-            selector.appendChild(ele);
-            if (defaultSelection == cm) ele.selected = true;
-        });
-        selector.addEventListener('change', () => {
-            this.changed = true;
-        });
-    }
-    cmap(){
-        for (let i = 0; i < Colormaps.length; i++)
-            if (this.selector[i].selected)
-                return find_colormap(Colormaps[i]);
-        return find_colormap(this.defaultSelection);
-    }
+import {ColormapControl, hsv2rgb} from "./cmap-util.js"
+
+export class MeshColormapControl extends ColormapControl{
+    static Colormaps = [
+        'viridis',
+        'inferno',
+        'rainbow',
+        'hsv',
+        'viridis_r',
+        'inferno_r',
+        'rainbow_r',
+        'hsv_r',
+    ]
+    static find_colormap = find_mesh_colormap;
 }
 /**
  * @callback Colormapper
@@ -44,19 +27,45 @@ export class ColormapControl{
  *
  * @return {Colormapper}
  * */
-export function find_colormap(name){
-    let colors;
-    if (name == 'viridis') colors = viridisColors;
-    else if (name == 'viridis_r') colors = [...viridisColors].reverse();
-    else if (name == 'inferno') colors = infernoColors;
-    else if (name == 'inferno_r') colors = [...infernoColors].reverse();
-    else if (name == 'rainbow') return _rainbow_cmap;
-    else if (name == 'rainbow_r') return _rainbow_cmap_r;
+export function find_mesh_colormap(name){
+    const rev = name.endsWith('_r');
+    switch (name){
+        case 'viridis':
+        case 'viridis_r':
+            return _array_wrapper(viridisColors, rev);
+        case 'inferno':
+        case 'inferno_r':
+            return _array_wrapper(infernoColors, rev);
+        case 'rainbow':
+        case 'rainbow_r':
+            return _func_wrapper(_rainbow_cmap, rev);
+        case 'hsv':
+        case 'hsv_r':
+            return _func_wrapper((v) => {return hsv2rgb(v, 1, 1);}, rev);
 
-    function colormapper(value){
+        default:
+            throw Error(`Missing colormap: ${name}.`)
+    }
+}
+
+function _func_wrapper(func, reverse){
+    if (reverse === undefined) reverse = false;
+    return (value) => {
+        if (isNaN(value)) return `rgb(0,0,0)`;
+        if (!isFinite(value)) return `rgb(0,0,0)`;
+        let v = Math.max(0, Math.min(1, value));
+        if (reverse) v = 1 - v;
+        return func(v);
+    }
+}
+
+function _array_wrapper(colors, reverse){
+    if (reverse === undefined) reverse = false;
+    return (value) => {
         if (isNaN(value)) return `rgb(0,0,0)`
         if (!isFinite(value)) return `rgb(0,0,0)`
         let v = Math.max(0, Math.min(1, value));
+        if (reverse) v = 1 - v;
         let i = v * (colors.length - 1);
         let i1 = Math.floor(i);
         let i2 = Math.min(i1 + 1, colors.length - 1);
@@ -66,21 +75,9 @@ export function find_colormap(name){
         let scale = (o) => {return Math.round((c1[o] + f*(c2[o] - c1[o]))*255);}
         return `rgb(${scale(0)},${scale(1)},${scale(2)})`;
     }
-    return colormapper;
 }
 
-function _rainbow_cmap(value){
-    if (isNaN(value)) return `rgb(0,0,0)`
-    let v = Math.max(0, Math.min(1, value));
-    const r = Math.round(255 * Math.max(0, Math.min(1, 1.5 - 4 * Math.abs(v - 0.75))));
-    const g = Math.round(255 * Math.max(0, Math.min(1, 1.5 - 4 * Math.abs(v - 0.5))));
-    const b = Math.round(255 * Math.max(0, Math.min(1, 1.5 - 4 * Math.abs(v - 0.25))));
-    return `rgb(${r},${g},${b})`;
-}
-
-function _rainbow_cmap_r(value){
-    if (isNaN(value)) return `rgb(0,0,0)`
-    let v = 1-Math.max(0, Math.min(1, value));
+function _rainbow_cmap(v){
     const r = Math.round(255 * Math.max(0, Math.min(1, 1.5 - 4 * Math.abs(v - 0.75))));
     const g = Math.round(255 * Math.max(0, Math.min(1, 1.5 - 4 * Math.abs(v - 0.5))));
     const b = Math.round(255 * Math.max(0, Math.min(1, 1.5 - 4 * Math.abs(v - 0.25))));

@@ -1,4 +1,5 @@
 import {SceneControl, SceneControlWithSelector} from "./scene/scene-abc.js";
+import {ScenePlot1D} from "./scene/scene-plot-1d.js";
 import {Geometries} from "./phasedarray/geometry.js";
 import {PhasedArray} from "./phasedarray/phasedarray.js";
 import {FarfieldSpherical} from "./phasedarray/farfield.js"
@@ -34,8 +35,8 @@ export class SceneControlPhasedArray extends SceneControl{
     constructor(parent){
         super(parent, ['theta', 'phi', 'atten-scale']);
         this.pa = null;
-        this.create_colormap_selector(CMKEYPHASE, 'rainbow');
-        this.create_colormap_selector(CMKEYATTEN, 'inferno_r');
+        this.create_mesh_colormap_selector(CMKEYPHASE, 'hsv');
+        this.create_mesh_colormap_selector(CMKEYATTEN, 'inferno_r');
         this.canvasPhase = this.find_element('geometry-phase-canvas');
         this.canvasAtten = this.find_element('geometry-magnitude-canvas');
         this.install_hover_item(this.canvasAtten, (i) => `${this.pa.vectorAtten[i].toFixed(2)} dB`);
@@ -151,7 +152,8 @@ export class SceneControlPhasedArray extends SceneControl{
     }
 }
 
-const CMKEYFARFIELD = 'farfield-colormap';
+const CMKEYFARFIELD2D = 'farfield-2d-colormap';
+const CMKEYFARFIELD1D = 'farfield-1d-colormap';
 
 export class SceneControlFarfield extends SceneControl{
     constructor(parent){
@@ -163,12 +165,15 @@ export class SceneControlFarfield extends SceneControl{
         this.ff = null;
         this.dirMax = null;
         this.eleMax = this.find_element('directivity-max', false);
-        this.create_colormap_selector(CMKEYFARFIELD, 'viridis');
-        this.canvas = this.find_element('farfield-canvas');
-        this.parent.create_canvas_hover(this.canvas);
+        this.create_mesh_colormap_selector(CMKEYFARFIELD2D, 'viridis');
+        this.create_listed_colormap_selector(CMKEYFARFIELD1D);
+        this.canvas2D = this.find_element('farfield-canvas-2d');
+        this.canvas1D = this.find_element('farfield-canvas-1d');
+        this.plot1D = new ScenePlot1D(this.canvas1D, this.colormap[CMKEYFARFIELD1D]);
+        this.parent.create_canvas_hover(this.canvas2D);
 
-        this.canvas.addEventListener('mousemove', (e) => {
-            const canvas = this.canvas;
+        this.canvas2D.addEventListener('mousemove', (e) => {
+            const canvas = this.canvas2D;
             const f = canvas.index_from_event;
             const ff = this.ff
             let text = "HI";
@@ -182,12 +187,12 @@ export class SceneControlFarfield extends SceneControl{
                     text = `(${theta.toFixed(2)}, ${phi.toFixed(2)}): ${ff2.toFixed(2)} dBi (${ff1.toFixed(2)} dB)`;
                 }
             }
-            this.canvas.hover_container.innerHTML = text;
+            canvas.hover_container.innerHTML = text;
         });
     }
     add_to_queue(queue){
         const arrayControl = this.parent.arrayControl;
-        const cm = this.colormap[CMKEYFARFIELD];
+        const cm = this.colormap[CMKEYFARFIELD2D];
         let needsRecalc = arrayControl.farfieldNeedsCalculation;
         let needsRescale = this.changed['farfield-scale'];
         let needsRedraw = cm.changed;
@@ -222,8 +227,13 @@ export class SceneControlFarfield extends SceneControl{
                 this.ff.create_colormap(cm.cmap());
                 cm.changed = false;
             });
-            queue.add('Drawing farfield...', () => {
-                this.ff.draw_polar(this.canvas);
+            queue.add('Drawing 2D farfield...', () => {
+                this.ff.draw_polar(this.canvas2D);
+            });
+        }
+        if (needsRedraw || this.plot1D.redrawWaiting){
+            queue.add('Drawing 1D farfield...', () => {
+                this.ff.create_1d_plot(this.plot1D);
             });
         }
     }

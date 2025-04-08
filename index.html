@@ -15,7 +15,6 @@
     <meta property="og:description" content="Phased array visualizer by Jason Durbin." />
     <meta property="og:image" content="./assets/favicon.png" />
     <script type="module" src="./js/index.js" defer></script>
-    <script src="./js/theme.js"></script>
 
     <!-- Matomo -->
     <!--
@@ -97,11 +96,11 @@
             <div id="pa-status">Loading...</div>
         </div>
     </div>
-    <div class="main-container">
+    <div class="canvas-grid">
         <div class="canvas-container">
             <div class="canvas-header"><h2>Element Phase</h2><span>&nbsp;</span></div>
             <div class="canvas-wrapper">
-                <canvas id="pa-geometry-phase-canvas"></canvas>
+                <canvas id="pa-geometry-phase-canvas" class="canvas-grid"></canvas>
             </div>
             <div class="canvas-footer">
                 <label for="pa-geometry-phase-colormap">Colormap</label>
@@ -111,7 +110,7 @@
         <div class="canvas-container">
             <div class="canvas-header"><h2>Element Attenuation</h2><span>&nbsp;</span></div>
             <div class="canvas-wrapper">
-                <canvas id="pa-geometry-magnitude-canvas"></canvas>
+                <canvas id="pa-geometry-magnitude-canvas" class="canvas-grid"></canvas>
             </div>
             <div class="canvas-footer">
                 <label for="pa-atten-scale">Scale</label>
@@ -121,20 +120,39 @@
             </div>
         </div>
         <div class="canvas-container">
-            <div class="canvas-header"><h2>Radiation Pattern</h2><span id="pa-directivity-max">&nbsp;</span></div>
+            <div class="canvas-header"><h2>2-D Radiation Pattern</h2><span id="pa-directivity-max">&nbsp;</span></div>
             <div class="canvas-wrapper">
-                <canvas id="pa-farfield-canvas"></canvas>
+                <canvas id="pa-farfield-canvas-2d" class="canvas-grid"></canvas>
             </div>
             <div class="canvas-footer">
                 <label for="pa-farfield-scale">Scale</label>
                 <input type="number" max="100" min="5" value="40" id="pa-farfield-scale" name="pa-farfield-scale">
-                <label for="pa-farfield-colormap">Colormap</label>
-                <select id="pa-farfield-colormap" name="pa-farfield-colormap"></select>
+                <label for="pa-farfield-2d-colormap">Colormap</label>
+                <select id="pa-farfield-2d-colormap" name="pa-farfield-2d-colormap"></select>
                 <br />
                 <label for="pa-theta-points">Theta Points</label>
                 <input type="number" min="11" max="513" value="257" id="pa-theta-points" name="pa-theta-points">
                 <label for="pa-phi-points">Phi Points</label>
                 <input type="number" min="11" max="513" value="257" id="pa-phi-points" name="pa-phi-points">
+            </div>
+        </div>
+    </div>
+    <div class="canvas-full">
+        <div class="canvas-container">
+            <div class="canvas-header"><h2>1-D Pattern Cuts</h2><span>&nbsp;</span></div>
+            <div class="canvas-wrapper">
+                <canvas id="pa-farfield-canvas-1d"></canvas>
+            </div>
+            <div class="canvas-footer">
+                <div class="canvas-legend">
+                    <span class="legend-item" data-cut="0" data-visible="true">Phi = 0 deg</span>
+                    <span class="legend-item" data-cut="90" data-visible="true">Phi = 90 deg</span>
+                </div>
+                <div>
+                    <label for="pa-farfield-1d-colormap">Colormap</label>
+                    <select id="pa-farfield-1d-colormap" name="pa-farfield-1d-colormap"></select>
+
+                </div>
             </div>
         </div>
     </div>
@@ -146,7 +164,7 @@
         <p>The provided directivity calculation assumes half-hemisphere radiation (+3 dB).</p>
         <p>The farfield mesh can be made finer by changing 'Theta Points' and 'Phi Points'.</p>
         <h2>Attributions</h2>
-        <p>Colormaps are generated to match <a href='https://matplotlib.org/stable/users/explain/colors/colormaps.html' target="_blank">matplotlib's</a>.</p>
+        <p>Meshing colormaps are generated to match <a href='https://matplotlib.org/stable/users/explain/colors/colormaps.html' target="_blank">matplotlib's</a>. Listed colormaps are from <a href="https://cran.r-project.org/web/packages/khroma/vignettes/tol.html" target="_blank">Paul Tol's Color Scheme</a>.</p>
         <p>Most of the tapers were pulled from <a href='https://www.researchgate.net/publication/316281181_Catalog_of_Window_Taper_Functions_for_Sidelobe_Control' target="_blank">"Catalog of Window Taper Functions for Sidelobe Control" by Armin W. Doerry</a>.</p>
     </div>
 </body>

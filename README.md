@@ -1,6 +1,9 @@
 # PhasedArrayVisualizer
 
-`PhasedArrayVisualizer` is a javascript application for simulating and visualizing phased array farfield patterns.
+`PhasedArrayVisualizer` is a javascript application for simulating and visualizing phased array farfield patterns. This is intended to be a demo; however, you're welcome to view the source code.
+
+[Try the demo](https://jasondurbin.github.io/PhasedArrayVisualizer/)
+
 
 ## License
 

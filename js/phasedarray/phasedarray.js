@@ -5,7 +5,9 @@ export class PhasedArray{
         this.taperX = taperX;
         this.set_theta_phi(0, 0);
         this.size = geometry.length;
+        this.vectorPhaseRaw = new Float32Array(this.size);
         this.vectorPhase = new Float32Array(this.size);
+        this.vectorMagRaw = new Float32Array(this.size);
         this.vectorMag = new Float32Array(this.size);
         this.vectorMagY = new Float32Array(this.size);
         this.vectorAtten = new Float32Array(this.size);
@@ -23,7 +25,40 @@ export class PhasedArray{
         const x = this.geometry.x;
         const y = this.geometry.y;
         for (let i = 0; i < this.geometry.length; i++){
-            this.vectorPhase[i] = -2*Math.PI*((x[i]*xf + y[i]*yf) % 1.0)
+            this.vectorPhaseRaw[i] = -2*Math.PI*((x[i]*xf + y[i]*yf) % 1.0)
+        }
+    }
+    calculate_x_taper(){
+        this.vectorMagX = this.taperX.calculate_weights(this.geometry.x);
+    }
+    calculate_y_taper(){
+        for (let i = 0; i < this.geometry.length; i++){
+            this.vectorMagY[i] = 1.0;
+        }
+    }
+    calculate_taper(){
+        for (let i = 0; i < this.geometry.length; i++){
+            this.vectorMagRaw[i] = this.vectorMagX[i] * this.vectorMagY[i];
+        }
+    }
+    calculate_final_vector(){
+        for (let i = 0; i < this.geometry.length; i++){
+            let m = this.vectorMagRaw[i];
+            let p = this.vectorPhaseRaw[i];
+            if (m < 0) {
+                m = Math.abs(m)
+                p += Math.PI;
+            }
+            this.vectorPhase[i] = p;
+            this.vectorMag[i] = m;
+        }
+    }
+    calculate_attenuation(){
+        const maxV = Math.max(...this.vectorMag);
+        for (let i = 0; i < this.geometry.length; i++){
+            let m = this.vectorMag[i]/maxV;
+            this.vectorMag[i] = m;
+            this.vectorAtten[i] = 20*Math.log10(Math.abs(m));
         }
     }
     rescale_phase(phaseMin, phaseMax){
@@ -44,32 +79,6 @@ export class PhasedArray{
         let ma = Math.max(...this.vectorAtten);
         for (let i = 0; i < this.geometry.length; i++){
             this.vectorAttenScaled[i] = -(this.vectorAtten[i] - ma - attenMax)/am;
-        }
-    }
-    calculate_x_taper(){
-        this.vectorMagX = this.taperX.calculate_weights(this.geometry.x);
-    }
-    calculate_y_taper(){
-        for (let i = 0; i < this.geometry.length; i++){
-            this.vectorMagY[i] = 1.0;
-        }
-    }
-    rescale_final_taper(){
-        const maxV = Math.max(...this.vectorMag);
-        for (let i = 0; i < this.geometry.length; i++){
-            let v = this.vectorMag[i]/maxV;
-            this.vectorMag[i] = v;
-            this.vectorAtten[i] = 20*Math.log10(Math.abs(v));
-        }
-    }
-    calculate_final_taper(){
-        for (let i = 0; i < this.geometry.length; i++){
-            let m = this.vectorMagX[i] * this.vectorMagY[i];
-            if (m < 0) {
-                m = Math.abs(m)
-                this.vectorPhase[i] += Math.PI;
-            }
-            this.vectorMag[i] = m;
         }
     }
     draw_phase(canvas, cmap){

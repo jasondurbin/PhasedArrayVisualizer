@@ -69,6 +69,8 @@ export class SceneControlPhasedArray extends SceneControl{
         let needsAttenY = false;
         let needsAtten = false;
         let phaseRescale = false;
+        let phaseChanged = false;
+        let attenChanged = false;
         let phaseCMChanged = cmPhase.changed;
         let attenCMChanged = cmAtten.changed;
         let attenRescale = this.changed['atten-scale'];
@@ -92,7 +94,7 @@ export class SceneControlPhasedArray extends SceneControl{
                 this.pa.compute_phase();
                 this.clear_changed('theta', 'phi');
             });
-            phaseRescale = true;
+            phaseChanged = true;
             this.farfieldNeedsCalculation = true;
         }
         if (needsAttenX){
@@ -109,13 +111,20 @@ export class SceneControlPhasedArray extends SceneControl{
         }
         if (needsAtten){
             queue.add('Multiplying tapers...', () => {
-                this.pa.calculate_final_taper();
+                this.pa.calculate_taper();
             });
-            queue.add('Rescaling tapers...', () => {
-                this.pa.rescale_final_taper();
+            attenChanged = true;
+            this.farfieldNeedsCalculation = true;
+        }
+        if (attenChanged || phaseChanged){
+            queue.add('Calculating vector...', () => {
+                this.pa.calculate_final_vector();
+            });
+            queue.add('Calculating attenuation...', () => {
+                this.pa.calculate_attenuation();
             });
             attenRescale = true;
-            this.farfieldNeedsCalculation = true;
+            phaseRescale = true;
         }
         if (phaseRescale){
             queue.add('Scaling phase...', () => {

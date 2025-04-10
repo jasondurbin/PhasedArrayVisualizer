@@ -29,14 +29,10 @@ export class SceneControlGeometry extends SceneControlWithSelector{
     }
 }
 
-const CMKEYATTEN = 'geometry-magnitude-colormap';
-
 export class SceneControlPhasedArray extends SceneControl{
     constructor(parent){
         super(parent, ['theta', 'phi']);
         this.pa = null;
-        this.create_mesh_colormap_selector(CMKEYATTEN, 'inferno_r');
-        this.canvasAtten = this.find_element('geometry-magnitude-canvas');
         this.geometryControl = new SceneControlGeometry(this);
         this.taperControl = new SceneControlAllTapers(this);
     }
@@ -48,7 +44,6 @@ export class SceneControlPhasedArray extends SceneControl{
     * @return {null}
     * */
     add_to_queue(queue){
-        const cmAtten = this.colormap[CMKEYATTEN];
         let needsPhase = this.changed['theta'] || this.changed['phi'];
         let needsAtten = this.taperControl.calculationWaiting;
         this.farfieldNeedsCalculation = false

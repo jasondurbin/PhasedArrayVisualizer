@@ -12,8 +12,8 @@ export class PhasedArray{
         this.set_theta_phi(0, 0);
         this.size = geometry.length;
         this.vectorPhaseRaw = new Float32Array(this.size);
-        this.vectorPhase = new Float32Array(this.size);
         this.vectorMagRaw = new Float32Array(this.size);
+        this.vectorPhase = new Float32Array(this.size);
         this.vectorMag = new Float32Array(this.size);
         this.vectorAtten = new Float32Array(this.size);
     }

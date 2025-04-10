@@ -9,7 +9,6 @@ export class ScenePlot2DGeometryABC extends ScenePlotABC{
         let cmap = parent.create_mesh_colormap_selector(cmapKey, defaultCMAP);
         super(parent, canvas, cmap);
         this.strokeColor = strokeColor;
-        this.create_hover_items();
         this._redrawWaiting = false;
     }
     install_hover_item(callback){

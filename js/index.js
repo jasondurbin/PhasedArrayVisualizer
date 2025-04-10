@@ -3,13 +3,12 @@ import {ScenePlotFarfieldCuts} from "./scene/plot-1d/scene-plot-farfield-cuts.js
 import {ScenePlotFarfield2D} from "./scene/plot-2d/scene-plot-2d-spherical-farfield.js";
 import {ScenePlot2DGeometryPhase, ScenePlot2DGeometryAtten} from "./scene/plot-2d/scene-plot-2d-geometry.js";
 import {SceneParent} from "./scene/scene-abc.js"
-import {SceneQueue} from "./scene/scene-queue.js";
 import {SceneTheme} from "./scene/scene-theme.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     new SceneTheme();
     const scene = new PhasedArrayScene('pa');
-    scene.build_state_machine();
+    scene.build_queue();
 });
 
 /**	 *
@@ -19,8 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
  * */
 export class PhasedArrayScene extends SceneParent{
     constructor(prepend){
-        super(prepend, ['refresh', 'atten-scale'])
-        this.queue = new SceneQueue(this.find_element('progress'), this.find_element('status'));
+        super(prepend, ['refresh'])
+        this.create_queue(this.find_element('progress'), this.find_element('status'));
         this.arrayControl = new SceneControlPhasedArray(this);
         this.farfieldControl = new SceneControlFarfield(this);
 
@@ -28,42 +27,27 @@ export class PhasedArrayScene extends SceneParent{
         this.plot1D = new ScenePlotFarfieldCuts(this, this.find_element('farfield-canvas-1d'), 'farfield-1d-colormap');
         this.geoPhase = new ScenePlot2DGeometryPhase(this, this.find_element('geometry-phase-canvas'), 'geometry-phase-colormap');
         this.geoAtten = new ScenePlot2DGeometryAtten(this, this.find_element('geometry-magnitude-canvas'), 'geometry-magnitude-colormap');
+        this.geoAtten.install_scale_control('atten-scale');
+
+        this.geoPhase.bind_phased_array_scene(this.arrayControl);
+        this.geoAtten.bind_phased_array_scene(this.arrayControl);
+        this.plot1D.bind_farfield_scene(this.farfieldControl);
+        this.plotFF.bind_farfield_scene(this.farfieldControl);
+        this.plot1D.install_scale_control('farfield-1d-scale');
+        this.plotFF.install_scale_control('farfield-2d-scale');
+        this.farfieldControl.add_max_monitor('directivity', (v) => {
+            this.find_element('directivity-max').innerHTML = `Directivity: ${(10*Math.log10(v)).toFixed(2)} dB`
+        });
 
         this.elements['refresh'].addEventListener('click', () => {
-            this.build_state_machine();
+            this.build_queue();
         });
+        this.create_popup_overlay();
     }
-    build_state_machine(){
+    build_queue(){
         this.queue.reset();
         this.arrayControl.add_to_queue(this.queue);
-
-        if (this.arrayControl.phaseChanged || this.geoPhase.redrawWaiting){
-            this.queue.add('Drawing phase...', () => {
-                this.geoPhase.load_phased_array(this.arrayControl.pa);
-            });
-            this.geoPhase.add_to_queue(this.queue);
-        }
-        if (this.arrayControl.attenChanged || this.geoAtten.redrawWaiting || this.changed['atten-scale']){
-            this.queue.add('Drawing attenuation...', () => {
-                this.geoAtten.load_phased_array(this.arrayControl.pa);
-                this.geoAtten.min = -Math.max(5, Math.abs(this.find_element('atten-scale').value))
-            });
-            this.geoAtten.add_to_queue(this.queue);
-        }
-
         this.farfieldControl.add_to_queue(this.queue);
-        if (this.farfieldControl.needsRedraw || this.plot1D.redrawWaiting){
-            this.queue.add('Drawing 1D farfield...', () => {
-                this.plot1D.load_farfield(this.farfieldControl.ff);
-                this.plot1D.draw_cuts();
-            });
-        }
-        if (this.farfieldControl.needsRedraw || this.plotFF.redrawWaiting){
-            this.queue.add('Loading 2D farfield...', () => {
-                this.plotFF.load_farfield(this.farfieldControl.ff);
-            });
-            this.plotFF.add_to_queue(this.queue);
-        }
         this.queue.start();
     }
 }

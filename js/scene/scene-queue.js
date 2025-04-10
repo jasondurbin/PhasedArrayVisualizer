@@ -62,7 +62,9 @@ export class SceneQueue{
         this.startingLength = 0;
         this._current = null;
     }
-    start(){
+    start(finalText){
+        if (finalText === undefined) finalText = "Complete";
+        this.finalText = finalText;
         const prog = this.progress;
         this.startingLength = this.queue.length;
         this._current = null;
@@ -72,9 +74,9 @@ export class SceneQueue{
     }
     get length(){ return this.queue.length; }
 
-    log(string){
+    log(string, toConsole){
         if (string !== undefined){
-            console.log(string)
+            if (toConsole !== false) console.log(string)
             this.status.innerHTML = string;
         }
     }
@@ -85,7 +87,7 @@ export class SceneQueue{
             this._current = this.next();
             prog.value = prog.max - this.length;
             if (this._current === null){
-                this.log("Complete");
+                this.log(this.finalText, false);
                 this.running = false;
                 return;
             }

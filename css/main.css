@@ -144,9 +144,6 @@ select{
     width: 200px;
     margin: auto;
 }
-.canvas-hover-div{
-    font-size: 0.8em;
-}
 .text-group{
     font-size: 16px;
     margin: 0px 0;
@@ -208,6 +205,7 @@ select{
     display: flex;
     gap: 10px;
     width: 100%;
+    flex-direction: row;
 }
 .canvas-legend{
     text-align: left;
@@ -216,6 +214,8 @@ select{
     border: 1px solid var(--theme-bg-color);
     padding: 2px;
     cursor: pointer;
+    box-sizing: border-box;
+    display: inline-block;
 }
 .legend-item.disabled{
     text-decoration: line-through;
@@ -246,15 +246,85 @@ select{
 }
 canvas{
     border: 1px solid var(--canvas-border-color);
-    box-shadow:3px 3px var(--shadow);
+    box-shadow: 3px 3px var(--shadow);
     box-sizing: border-box;
 }
 .canvas-header{
-    margin: 10px 0;
+    margin: 10px 0 0 0;
+}
+.canvas-header progress{
+    width: 100%;
+    height: 2px;
+    margin: 0px;
+    padding: 0px;
+    display: block;
+    margin: 2px 0 0 0;
+}
+.canvas-hover-div{
+    font-size: 0.8em;
+    margin: 0px;
 }
 .canvas-footer{
-    margin: 10px 0;
+    margin: 4px 0 10px 0;
     text-align: right;
+    font-size: 0.8em;
+}
+#popup-overlay{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 999;
+}
+.popup{
+    position: absolute;
+    background:var(--bg-color);
+    border: 2px solid var(--settings-border-color);
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    flex-direction: column;
+    gap: 4px;
+}
+.popup h3{
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    text-align: center;
+}
+.popup form > div{
+    display: flex;
+    gap: 4px;
+    flex-direction: row;
+    width: 100%;
+    margin: 4px 0;
+    padding: 0;
+}
+.popup form span{
+    margin: auto;
+    font-size: 0.9em;
+    text-align: right;
+}
+.popup form label{
+    flex-grow: 1;
+    margin: auto;
+    font-size: 0.9em;
+    white-space: nowrap;
+    text-align: right;
+}
+.popup form select{
+    width: 100%;
+}
+.popup form .popup-buttons{
+    text-align: right;
+    display: block;
+    margin: 10px 0 0 0;
+}
+.popup form .popup-buttons button{
+    margin-left: 4px;
 }
 @media (max-width: 1024px){
     .canvas-grid{ flex-wrap: wrap; }
@@ -271,4 +341,11 @@ canvas{
         width: 100%;
     }
     .canvas-grid .canvas-container:nth-child(3){ width: 100%; }
+
+    .canvas-full .canvas-footer{
+        flex-direction: column;
+    }
+    .canvas-full .canvas-footer div{
+        width: 100%;
+    }
 }

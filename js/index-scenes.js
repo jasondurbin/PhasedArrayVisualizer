@@ -15,9 +15,7 @@ export class SceneControlGeometry extends SceneControlWithSelector{
         super.control_changed(key);
         this.activeGeometry = null;
     }
-    get calculationWaiting(){
-        return this.activeGeometry === null;
-    }
+    get calculationWaiting(){ return this.activeGeometry === null; }
     add_to_queue(queue){
         if (this.calculationWaiting){
             queue.add('Building geometry...', () => {
@@ -35,6 +33,11 @@ export class SceneControlPhasedArray extends SceneControl{
         this.pa = null;
         this.geometryControl = new SceneControlGeometry(this);
         this.taperControl = new SceneControlAllTapers(this);
+        this.add_event_types(
+            'phased-array-changed',
+            'phased-array-phase-changed',
+            'phased-array-attenuation-changed',
+        );
     }
     /**
     * Add callable objects to queue.
@@ -46,6 +49,7 @@ export class SceneControlPhasedArray extends SceneControl{
     add_to_queue(queue){
         let needsPhase = this.changed['theta'] || this.changed['phi'];
         let needsAtten = this.taperControl.calculationWaiting;
+        let needsRecalc = false;
         this.farfieldNeedsCalculation = false
         this.geometryControl.add_to_queue(queue);
         this.taperControl.add_to_queue(queue);
@@ -53,11 +57,15 @@ export class SceneControlPhasedArray extends SceneControl{
         if (this.geometryControl.calculationWaiting || this.pa === null){
             queue.add('Updating array...', () => {
                     this.pa = new PhasedArray(this.geometryControl.activeGeometry);
+                    this.trigger_event('phased-array-changed', this.pa);
                 }
             )
             needsPhase = true;
             needsAtten = true;
             this.farfieldNeedsCalculation = true;
+        }
+        if (this.pa !== null){
+            needsRecalc = needsRecalc || this.pa.requestUpdate;
         }
         if (needsPhase){
             queue.add('Calculating phase...', () => {
@@ -68,38 +76,50 @@ export class SceneControlPhasedArray extends SceneControl{
                 this.pa.compute_phase();
                 this.clear_changed('theta', 'phi');
             });
-            this.farfieldNeedsCalculation = true;
+            needsRecalc = true;
         }
         if (needsAtten){
             this.taperControl.add_calculator_queue(queue, this);
-            this.farfieldNeedsCalculation = true;
+            needsRecalc = true;
         }
-        if (needsAtten || needsPhase){
+        if (needsRecalc){
             queue.add('Calculating vector...', () => {
                 this.pa.calculate_final_vector();
             });
             queue.add('Calculating attenuation...', () => {
                 this.pa.calculate_attenuation();
+                this.trigger_event('phased-array-phase-changed', this.pa);
+                this.trigger_event('phased-array-attenuation-changed', this.pa);
             });
+            this.farfieldNeedsCalculation = true;
         }
         this.phaseChanged = needsPhase;
         this.attenChanged = needsAtten;
     }
 }
 
-const CMKEYFARFIELD2D = 'farfield-2d-colormap';
-
 export class SceneControlFarfield extends SceneControl{
     constructor(parent){
-        super(parent, [
-            'theta-points',
-            'phi-points',
-            'farfield-scale',
-        ]);
+        super(parent, ['theta-points', 'phi-points']);
         this.ff = null;
-        this.dirMax = null;
-        this.eleMax = this.find_element('directivity-max', false);
-        this.create_mesh_colormap_selector(CMKEYFARFIELD2D, 'viridis');
+        this.validMaxMonitors = new Set(['directivity']);
+        this.maxMonitors = {};
+        this.add_event_types('farfield-changed', 'farfield-calculation-complete');
+    }
+    /**
+    * Add callable functions to monitor values.
+    *
+    * @param {string} key Examples: directivity
+    * @param {function(Number):null} callback
+    *
+    * @return {null}
+    * */
+    add_max_monitor(key, callback){
+        if (!(this.validMaxMonitors.has(key))){
+            throw Error(`Invalid monitor ${key}. Expected: ${Array.from(this.validMaxMonitors).join(', ')}`)
+        }
+        if (!(key in this.maxMonitors)) this.maxMonitors[key] = [];
+        this.maxMonitors[key].push(callback);
     }
     /**
     * Add callable objects to queue.
@@ -110,10 +130,7 @@ export class SceneControlFarfield extends SceneControl{
     * */
     add_to_queue(queue){
         const arrayControl = this.parent.arrayControl;
-        const cm = this.colormap[CMKEYFARFIELD2D];
         let needsRecalc = arrayControl.farfieldNeedsCalculation;
-        let needsRescale = this.changed['farfield-scale'];
-        let needsRedraw = cm.changed;
 
         if (this.changed['theta-points'] || this.changed['phi-points'] || this.ff === null){
             queue.add('Creating farfield mesh...', () => {
@@ -121,26 +138,26 @@ export class SceneControlFarfield extends SceneControl{
                     this.find_element('theta-points').value,
                     this.find_element('phi-points').value
                 )
+                this.trigger_event('farfield-changed', this.ff);
                 this.clear_changed('theta-points', 'phi-points');
             });
             needsRecalc = true;
         }
         if (needsRecalc){
             queue.add_iterator('Calculating farfield...', () => {
-                this.dirMax = null;
                 return this.ff.calculator_loop(arrayControl.pa)
             });
-            needsRescale = true;
+            queue.add("Notifying farfield change...", () => {
+                this.trigger_event('farfield-calculation-complete', this.ff);
+                for (const [key, value] of Object.entries(this.maxMonitors)){
+                    let val;
+                    if (key == 'directivity') val = this.ff.dirMax;
+                    else throw Error(`Unknown max key ${key}.`)
+                    value.forEach((e) => e(val));
+                }
+            })
         }
-        if (needsRescale){
-            queue.add('Rescaling farfield...', () => {
-                if (this.eleMax !== null) this.eleMax.innerHTML = `Directivity: ${(10*Math.log10(this.ff.dirMax)).toFixed(2)} dB`;
-                this.ff.rescale_magnitude(this.find_element('farfield-scale').value)
-                this.clear_changed('farfield-scale');
-            });
-            needsRedraw = true;
-        }
-        this.needsRedraw = needsRedraw;
+        this.needsRedraw = needsRecalc;
     }
 }
 

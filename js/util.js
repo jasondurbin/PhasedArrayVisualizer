@@ -119,6 +119,15 @@ export function gamma(z){
 export function ones(len){ return Float32Array.from({length: len}, () => 1); }
 
 /**
+* Create an array of zeros.
+*
+* @param {int} len
+*
+* @return {Float32Array}
+* */
+export function zeros(len){ return Float32Array.from({length: len}, () => 0); }
+
+/**
 * Calculate the zero-order Modified Bessel function.
 *
 * @param {float} x

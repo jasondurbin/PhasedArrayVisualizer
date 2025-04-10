@@ -1,6 +1,7 @@
 import {FarfieldSpherical} from "../../phasedarray/farfield.js"
 import {ScenePlotABC} from "../scene-plot-abc.js"
 import {adjust_theta_phi} from "../../util.js";
+import {SceneControlFarfield} from "../../index-scenes.js"
 
 export class ScenePlotFarfield2D extends ScenePlotABC{
     constructor(parent, canvas, cmapKey, thetaSteps, phiSteps){
@@ -8,16 +9,23 @@ export class ScenePlotFarfield2D extends ScenePlotABC{
         super(parent, canvas, cmap);
         if (thetaSteps === undefined) thetaSteps = 7;
         if (phiSteps === undefined) phiSteps = 13;
+        this.add_event_types('data-min-changed');
         this.phiSteps = phiSteps;
         this.thetaSteps = thetaSteps;
-        this.create_hover_items();
-        canvas.addEventListener('mousemove', (e) => { this.show_farfield_hover(e); });
+        canvas.addEventListener('mousemove', (e) => {
+            if (this.queue.running) return;
+            this.show_farfield_hover(e);
+        });
+        this.cmap.addEventListener('change', () => {this.build_queue();})
         this.ff = undefined;
-        this._needsRedraw = false
-    }
-    get redrawWaiting(){
-        if (this.ff === undefined) return false;
-        return this._needsRedraw || this.cmap.changed;
+        this._needsRescale = false
+        this.addEventListener('data-min-changed',() => {
+            this._needsRescale = true
+            this.build_queue();
+        })
+        this.create_hover_items();
+        this.create_progress_bar();
+        this.create_queue();
     }
     /**
     * Load farfield object.
@@ -28,45 +36,61 @@ export class ScenePlotFarfield2D extends ScenePlotABC{
     * */
     load_farfield(ff){
         this.ff = ff;
-        this._needsRedraw = true;
+        this._needsRescale = true;
+    }
+    get isValid(){return !(this.ff === undefined || this.ff === null); }
+    /**
+    * Bind a Farfield Scene.
+    *
+    * @param {SceneControlFarfield} scene
+    *
+    * @return {null}
+    * */
+    bind_farfield_scene(scene){
+        scene.addEventListener('farfield-calculation-complete', (ff) => {
+            this.load_farfield(ff);
+            this.build_queue();
+        });
+    }
+    rescale(){
+        if (!this.isValid) return;
+        const logMin = -this.min;
+        const ff = this.ff
+        this.farfield_log_scale = new Array(ff.phiPoints);
+        for (let ip = 0; ip < ff.phiPoints; ip++){
+            const pc = ff.farfield_log[ip];
+            this.farfield_log_scale[ip] = Float32Array.from({length: ff.thetaPoints}, (_, it) => ((pc[it] + logMin)/logMin));
+        }
+        this._needsRescale = false;
     }
     create_colormap(){
+        if (!this.isValid) return;
         const ff = this.ff
-        if (ff === undefined) return;
         const cmap = this.cmap.cmap();
         this.colormap_vals = new Array(ff.phiPoints);
         for (let ip = 0; ip < ff.phiPoints; ip++){
-            this.colormap_vals[ip] = new Array(ff.thetaPoints);
+            const arr = new Array(ff.thetaPoints);
+            this.colormap_vals[ip] = arr;
             for (let it = 0; it < ff.thetaPoints; it++){
-                this.colormap_vals[ip][it] = cmap(ff.farfield_log_scale[ip][it]);
+                arr[it] = cmap(this.farfield_log_scale[ip][it]);
             }
         }
+        cmap.changed = false;
     }
-    add_to_queue(queue){
-        queue.add('Creating farfield colormap...', () => {
-            if (this.ff === undefined) return;
+    build_queue(){
+        this.queue.reset();
+        if (this._needsRescale){
+            this.queue.add('Rescaling farfield...', () => {
+                this.rescale();
+            });
+        }
+        this.queue.add('Creating farfield colormap...', () => {
             this.create_colormap();
-            this.cmap.changed = false;
         });
-        queue.add('Drawing 2D farfield...', () => {
-            if (this.ff === undefined) return;
+        this.queue.add('Drawing 2D farfield...', () => {
             this.draw_polar();
-            this._needsRedraw = false;
         });
-    }
-    create_hover_items(){
-        const canvas = this.canvas;
-        const p = canvas.parentElement.parentElement;
-        const h = p.querySelector(".canvas-header");
-        const ele = document.createElement("div");
-        ele.classList = "canvas-hover-div";
-        ele.innerHTML = "&nbsp;";
-        canvas.hover_container = ele;
-        h.appendChild(ele);
-
-        canvas.addEventListener('mouseleave', () => {
-            canvas.hover_container.innerHTML = "&nbsp";
-        });
+        this.queue.start("&nbsp;");
     }
     show_farfield_hover(e){
         const canvas = this.canvas;
@@ -86,10 +110,10 @@ export class ScenePlotFarfield2D extends ScenePlotABC{
         canvas.hover_container.innerHTML = text;
     }
     draw_polar(){
+        if (!this.isValid) return;
         const canvas = this.canvas;
         const ctx = canvas.getContext('2d');
         const ff = this.ff;
-        if (ff == undefined) return;
         ctx.reset();
         const scale = 7000;
         canvas.width = scale;
@@ -150,6 +174,7 @@ export class ScenePlotFarfield2D extends ScenePlotABC{
 
         // delete the colormap values to clear memory.
         delete this.colormap_vals;
+        this._needsRedraw = false;
     }
     add_phi_grid(steps, startFraction){
         const canvas = this.canvas;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Phased Array Visualizer</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1">
     <link rel="shortcut icon" href="./assets/favicon.png" />
     <link rel="stylesheet" href="./css/main.css">
     <meta name="description" content="Phased array visualizer by Jason Durbin." />
@@ -123,8 +123,8 @@
                 <canvas id="pa-farfield-canvas-2d" class="canvas-grid"></canvas>
             </div>
             <div class="canvas-footer">
-                <label for="pa-farfield-scale">Scale</label>
-                <input type="number" max="100" min="5" value="40" id="pa-farfield-scale" name="pa-farfield-scale">
+                <label for="pa-farfield-2d-scale">Scale</label>
+                <input type="number" max="100" min="5" value="40" id="pa-farfield-2d-scale" name="pa-farfield-2d-scale">
                 <label for="pa-farfield-2d-colormap">Colormap</label>
                 <select id="pa-farfield-2d-colormap" name="pa-farfield-2d-colormap"></select>
                 <br />
@@ -145,12 +145,13 @@
                 <div class="canvas-legend">
                     <span class="legend-item" data-cut="0" data-visible="true">Phi = 0 deg</span>
                     <span class="legend-item" data-cut="90" data-visible="true">Phi = 90 deg</span>
-                    <span style='font-size:0.65em'>Click to hide/show trace.</span>
+                    <span style='font-size:0.8em'>Click to hide/show trace.</span>
                 </div>
                 <div>
+                    <label for="pa-farfield-1d-scale">Scale</label>
+                    <input type="number" max="100" min="5" value="40" id="pa-farfield-1d-scale" name="pa-farfield-1d-scale">
                     <label for="pa-farfield-1d-colormap">Colormap</label>
                     <select id="pa-farfield-1d-colormap" name="pa-farfield-1d-colormap"></select>
-
                 </div>
             </div>
         </div>
@@ -159,9 +160,15 @@
         <h2>About</h2>
         <p>This tool allows you to change a phased array's geometry, element spacing, and steering position.</p>
         <p>This demo was created by <a href="http://jasonleodurbin.com" target="_blank">Jason Durbin</a>. The final implementation will be hosted on <a href='https://neonphysics.com' target='_blank'>neonphysics.com</a>.
+        <p>Clicking (or long pressing) elements in the phase/attenuation plots will allow you to manually set phase/attenuation. Additioanlly, the attenuation pop-up allows you to
+            disable an element.
+        </p>
         <h2>Notes</h2>
         <p>The provided directivity calculation assumes half-hemisphere radiation (+3 dB).</p>
-        <p>The farfield mesh can be made finer by changing 'Theta Points' and 'Phi Points'.</p>
+        <p>The farfield mesh can be made finer by changing 'Theta Points' and 'Phi Points'; however, this may result in a laggy performance.</p>
+        <h2>Commercial Use</h2>
+        <p>If your company sells phased arrays, BFICs, etc. and would like to use a version of this tool on your website, contact hello@neonphysics.com.</p>
+        <p>Commercial use is otherwise prohibited.</p>
         <h2>Attributions</h2>
         <p>Meshing colormaps are generated to match <a href='https://matplotlib.org/stable/users/explain/colors/colormaps.html' target="_blank">matplotlib's</a>. Listed colormaps are from <a href="https://cran.r-project.org/web/packages/khroma/vignettes/tol.html" target="_blank">Paul Tol's Color Scheme</a>.</p>
         <p>Most of the tapers were pulled from <a href='https://www.researchgate.net/publication/316281181_Catalog_of_Window_Taper_Functions_for_Sidelobe_Control' target="_blank">"Catalog of Window Taper Functions for Sidelobe Control" by Armin W. Doerry</a>.</p>

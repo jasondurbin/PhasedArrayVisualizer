@@ -18,6 +18,7 @@ export class ColormapControl{
             this.changed = true;
         });
     }
+    addEventListener(e, callback){ this.selector.addEventListener(e, callback); }
     cmap(){
         const cms = this.constructor.Colormaps;
         const find_colormap = this.constructor.find_colormap;

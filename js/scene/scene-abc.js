@@ -10,12 +10,46 @@ export class SceneObjectABC{
         this.changed = {};
         this.elements = {};
         this.find_elements(controls);
+        this.listeners = {};
         controls.forEach((k) => {
             this.changed[k] = true;
             this.find_element(k).addEventListener('change', () => {this.control_changed(k)});
         });
         this.controls = controls;
+        this.eventTypes = new Set(['control-changed']);
+        this.queue = null;
     }
+    /**
+    * Install an event listener similar to pure Javascript.
+    *
+    * Example events:
+    *       `control-changed`: (controlname) => {}
+    *
+    * Classes that inherit this may add their own event types.
+    * These can be viewed using calling `list_event_types()`
+    * which return all valid event types.
+    *
+    * @param {String} event
+    * @param {function(...):null} callback
+    *
+    * @return {null}
+    * */
+    addEventListener(event, callback){
+        if (!(this.eventTypes.has(event))){
+            throw Error(`'${event} is not a valid event. Expected: ${Array.from(this.eventTypes).join(', ')}`)
+        }
+        if (!(event in this.listeners)) this.listeners[event] = [];
+        this.listeners[event].push(callback);
+    }
+    async trigger_event(event, ...args){
+        if (!(this.eventTypes.has(event))){
+            throw Error(`'${event} is not a valid event to trigger.`)
+        }
+        if (!(event in this.listeners)) return;
+        for (const func of this.listeners[event]){ await func(...args); }
+    }
+    list_event_types(){ return this.eventTypes; }
+    add_event_types(...args){ this.eventTypes = this.eventTypes.union(new Set(args)); }
     find_element(id, allowError){
         if (this.elements[id] !== undefined) return this.elements[id];
         let eid = this.prepend + "-" + id;
@@ -43,12 +77,209 @@ export class SceneObjectABC{
     *
     * @return {null}
     * */
-    control_changed(key){ this.changed[key] = true; }
+    control_changed(key){
+        this.trigger_event('control-changed', key);
+        this.changed[key] = true;
+    }
     clear_changed(...keys){
         keys.forEach((k) => {
             if (k in this.changed) this.changed[k] = false;
             if (k in this.colormap) this.colormap[k].changed = false;
         });
+    }
+    create_queue(progressElement, statusElement){
+        this.queue = new SceneQueue(progressElement, statusElement);
+    }
+    create_popup_overlay(){
+        let ele = document.querySelector("#popup-overlay");
+        if (ele !== undefined && ele !== null) return ele;
+        ele = document.createElement("div")
+        ele.id = "popup-overlay";
+        document.body.appendChild(ele);
+
+        ele.addEventListener('click', () => {
+            ele.style.display = 'none';
+        });
+        return ele;
+    }
+    create_popup(title, controls, callback){
+        return new ScenePopup(this, title, controls, callback);
+    }
+}
+export class ScenePopup{
+    constructor(parent, title, controls, callback){
+        this._elements = {};
+        const overlay = parent.create_popup_overlay();
+        this.parent = parent;
+        const ele = document.createElement("div");
+        const form = document.createElement("form");
+        ele.classList = "popup";
+        let h = document.createElement("h3");
+        h.innerHTML = title;
+        ele.appendChild(h);
+        ele.appendChild(form);
+        document.body.appendChild(ele);
+
+        this.container = ele;
+        this.overlay = overlay;
+        this.form = form;
+        this.add_controls(controls);
+
+        const div = document.createElement("div");
+        const b1 = document.createElement("button");
+        const b2 = document.createElement("button");
+        b1.innerHTML = 'OK';
+        b2.innerHTML = 'Cancel';
+        b2.type = 'button'
+        div.classList = 'popup-buttons';
+        div.appendChild(b1);
+        div.appendChild(b2);
+        form.appendChild(div);
+        this._focus = null;
+
+        const _hide = () => {
+            ele.style.display = 'none';
+            overlay.style.display = 'none';
+            ele.remove();
+        }
+        const _notify_cancel = () => {
+            _hide();
+            if (callback !== undefined) callback(null);
+        }
+        const _notify_complete = () => {
+            _hide();
+            if (callback !== undefined) callback(this.build_results());
+        }
+        overlay.addEventListener('click', _notify_cancel);
+        b2.addEventListener('click', _notify_cancel);
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            _notify_complete();
+        });
+        this.add_action = (text) => {
+            const b = document.createElement("button");
+            const d = document.createElement("div");
+            b.addEventListener('click', _notify_cancel);
+            b.type = 'button';
+            b.innerHTML = text;
+            form.insertBefore(d, div);
+            d.appendChild(b);
+            d.classList = "popup-buttons";
+            return b;
+        }
+    }
+    element(key){
+        return this._elements[key]['element'];
+    }
+    set_element_value(key, value){
+        const config = this._elements[key];
+        const dtype = config['type'];
+        if (dtype == "number") config['element'].value = value;
+        else if (dtype == "checkbox") config['element'].checked = value;
+        else if (dtype == "span") config['element'].innerHTML = value;
+    }
+    build_results(){
+        const results = {};
+        for (const [key, entry] of Object.entries(this._elements)){
+            let value;
+            const etype = entry['type'];
+            const ele = entry['element'];
+            if (etype == 'number'){
+                value = ele.value;
+                if ('max' in entry) value = Math.min(entry['max'], value);
+                if ('min' in entry) value = Math.max(entry['min'], value);
+            }
+            else if (etype == 'checkbox') value = ele.checked;
+            else if (etype == 'span') value = ele.innerHTML;
+            results[key] = value;
+        }
+        return results;
+    }
+    add_controls(config){
+        if (config === undefined) return;
+        config.forEach((e) => {
+            const div = document.createElement('div');
+            const lbl = document.createElement('label');
+            if (!('type' in e)) throw Error("Control config must contain 'type'.");
+            if (!('id' in e)) throw Error("Control config must contain 'id'.");
+            const etype = e['type'];
+            const eid = e['id'];
+            const nid = "popup-item-" + eid;
+            if (eid in this._elements) throw Error(`Control id '${eid}' is not unique.`);
+            let reverse = false;
+            let ele;
+            if ('label' in e) lbl.innerHTML = e['label'];
+            lbl.setAttribute('for', nid);
+            if (etype == 'number'){
+                ele = document.createElement('input');
+                ele.type = 'number';
+            }
+            else if (etype == 'checkbox'){
+                ele = document.createElement('input');
+                ele.type = 'checkbox';
+            }
+            else if (etype == 'span'){
+                ele = document.createElement('span');
+            }
+            else throw Error(`Unknown element type ${etype}`);
+
+            if ('value' in e) ele.value = e['value'];
+            if ('min' in e) ele.min = e['min'];
+            if ('max' in e) ele.max = e['max'];
+            if ('step' in e) ele.step = e['step'];
+            ele.id = nid;
+            if (reverse){
+                lbl.style.textAlign = 'left';
+                div.appendChild(ele);
+                div.appendChild(lbl);
+            }
+            else{
+                div.appendChild(lbl);
+                div.appendChild(ele);
+            }
+            this.form.appendChild(div);
+            e['element'] = ele;
+            this._elements[eid] = e;
+            if ('focus' in e && e['focus']) this._focus = ele;
+        })
+    }
+    show_from_event(e){
+        let ex, ey;
+        if (e.type == 'touchstart'){
+            ex = e.touches[0].clientX;
+            ey = e.touches[0].clientY;
+        }
+        else{
+            ex = e.clientX;
+            ey = e.clientY;
+        }
+        this.show(ex, ey);
+    }
+    show(cursorX, cursorY){
+        const scrollX = window.scrollX;
+        const scrollY = window.scrollY;
+
+        const popupWidth = this.container.offsetWidth || 200;
+        const popupHeight = this.container.offsetHeight || 100;
+        const screenWidth = window.innerWidth + scrollX;
+        const screenHeight = window.innerHeight + scrollY;
+
+        let popupX = cursorX + scrollX - popupWidth / 2;
+        let popupY = cursorY + scrollY - popupHeight / 2;
+
+        if (popupX < scrollX) popupX = scrollX + 10;
+        if (popupY < scrollY) popupY = scrollY + 10;
+        if (popupX + popupWidth > screenWidth) popupX = screenWidth - popupWidth - 10;
+        if (popupY + popupHeight > screenHeight) popupY = screenHeight - popupHeight - 10;
+
+        this.container.style.left = `${popupX}px`;
+        this.container.style.top = `${popupY}px`;
+        this.container.style.display = 'flex';
+        this.overlay.style.display = 'block';
+        if (this._focus !== null){
+            this._focus.focus();
+            this._focus.select()
+        }
     }
 }
 export class SceneParent extends SceneObjectABC{}

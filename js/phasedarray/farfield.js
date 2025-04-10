@@ -15,14 +15,12 @@ export class FarfieldSpherical{
 
         this.farfield_total = new Array(this.phiPoints);
         this.farfield_log = new Array(this.phiPoints);
-        this.farfield_log_scale = new Array(this.phiPoints);
         this.maxValue = -Infinity;
         this.dirMax = null;
 
         for (let i = 0; i < this.phiPoints; i++){
             this.farfield_total[i] = new Float32Array(this.thetaPoints);
             this.farfield_log[i] = new Float32Array(this.thetaPoints);
-            this.farfield_log_scale[i] = new Float32Array(this.thetaPoints);
         }
     }
     *calculator_loop(pa){
@@ -88,14 +86,6 @@ export class FarfieldSpherical{
         for (let ip = 0; ip < this.phiPoints; ip++){
             for (let it = 0; it < this.thetaPoints; it++){
                 this.farfield_log[ip][it] = 10*Math.log10(this.farfield_total[ip][it]/this.maxValue);
-            }
-        }
-    }
-    rescale_magnitude(logMin){
-        logMin = Math.max(Math.abs(Number(logMin)), 5);
-        for (let ip = 0; ip < this.phiPoints; ip++){
-            for (let it = 0; it < this.thetaPoints; it++){
-                this.farfield_log_scale[ip][it] = (this.farfield_log[ip][it] + logMin)/logMin;
             }
         }
     }

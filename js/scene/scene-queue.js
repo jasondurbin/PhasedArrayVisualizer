@@ -1,3 +1,12 @@
+/**
+ * Queue iterator object.
+ *
+ * @typedef {Object} QueueIteratorResult
+ * @property {String} text - Text to display on progress bar.
+ * @property {number} progress - Progress value.
+ * @property {number} max - Maximum value expected on `progress`.
+ */
+
 export class SceneQueue{
     constructor(progressElement, statusElement){
         this.progress = progressElement;
@@ -7,6 +16,14 @@ export class SceneQueue{
         this.channel.port1.onmessage = () => {this.process_queue()};
         this.running = false;
     }
+    /**
+    * Add callable object to queue.
+    *
+    * @param {String} text String to display on status bar
+    * @param {function():null} func Callback function.
+    *
+    * @return {null}
+    * */
     add(text, func){
         this.queue.push({
             text: text,
@@ -14,12 +31,21 @@ export class SceneQueue{
             type: 'function',
         });
     }
+    /**
+    * Add iterator to queue. Progress bar will be updated to match
+    * progress of iterator.
+    *
+    * @param {String} text String to display on status bar
+    * @param {function():Iterator<QueueIteratorResult>} func Callback iterator that yields information.
+    *
+    * @return {null}
+    * */
     add_iterator(text, func){
         this.queue.push({
             text: text,
             func: func,
             type: 'iterator',
-        })
+        });
     }
     dump(){
         this.queue.forEach((entry) => {

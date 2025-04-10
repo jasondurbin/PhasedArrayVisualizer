@@ -1,13 +1,14 @@
 
-import {linspace} from "../util.js";
+import {linspace} from "../../util.js";
+import {ScenePlotABC} from "../scene-plot-abc.js"
 
-export class ScenePlot1D{
-    constructor(canvas, cmap){
-        this.canvas = canvas;
+export class ScenePlot1D extends ScenePlotABC{
+    constructor(parent, canvas, cmapKey){
+        let cmap = parent.create_listed_colormap_selector(cmapKey);
+        super(parent, canvas, cmap);
         this.reset();
         canvas.width = canvas.width*this.scale;
         canvas.height = canvas.height*this.scale;
-        this.cmap = cmap;
         const pe = canvas.parentElement.parentElement;
         this.legend = pe.querySelector(".canvas-legend");
 
@@ -50,13 +51,6 @@ export class ScenePlot1D{
     set_xlabel(label){ this.xLabel = label; }
     set_xgrid(start, stop, count){ this.xGrid = linspace(start, stop, count); }
     set_ygrid(start, stop, count){ this.yGrid = linspace(start, stop, count); }
-    create_farfield_cartesian(){
-        this.reset();
-        this.set_xlabel('Theta (deg)');
-        this.set_ylabel('Relative Directivity (dB)');
-        this.set_xgrid(-90, 90, 13);
-        this.set_ygrid(-40, 0, 11);
-    }
     add_data(x, y, item){
         this.redrawWaiting = true;
         this._data.push({

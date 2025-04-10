@@ -63,19 +63,21 @@ function factorial(v) {
 }
 
 /**
-* Normalizes input dimensions to be between [-m, m].
+* Normalizes input to be between [-m, m].
 *
 * @param {Float32Array} x
 * @param {float} [m=0.5] (optional) Normalization bounds.
+* @param {float} [c=0.0] (optional) Center.
 *
 * @return {Float32Array}
 * */
-export function normalize_input(x, m){
+export function normalize(x, m, c){
     if (m === undefined) m = 0.5;
+    if (c === undefined) c = 0.0;
     const maxX = Math.max(...x);
     const minX = Math.min(...x);
     const den = (maxX - minX)/(m*2);
-    return Float32Array.from({'length': x.length}, (_, i) => (x[i] - minX)/den - m);
+    return Float32Array.from({'length': x.length}, (_, i) => (x[i] - minX)/den - m + c);
 }
 /**
 * Gamma function.

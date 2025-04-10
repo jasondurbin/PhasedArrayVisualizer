@@ -12,59 +12,6 @@ export class Geometry{
         this.x = x;
         this.y = y;
     }
-    draw(canvas, data, colormap, strokeColor){
-        if (strokeColor === undefined) strokeColor = 'black';
-        const scale = 600;
-        canvas.width = scale;
-        canvas.height = scale;
-        const ctx = canvas.getContext('2d');
-        ctx.reset();
-
-        const maxX = Math.max(...this.x) + this.dx/2;
-        const minX = Math.min(...this.x) - this.dx/2;
-        const maxY = Math.max(...this.y) + this.dy/2;
-        const minY = Math.min(...this.y) - this.dy/2;
-
-        const wx = (maxX - minX);
-        const wy = (maxY - minY);
-        const sc = Math.min(canvas.width/wx, canvas.height/wy);
-        const ox = (canvas.width - wx*sc)/2 - minX*sc;
-        const oy = (canvas.height - wy*sc)/2 - minY*sc;
-        const dx = this.dx*0.98*sc/2;
-        const dy = this.dy*0.98*sc/2;
-
-        const _xy_to_wh = (x, y) => [x*sc+ox, scale-(y*sc+oy)];
-        const _wh_to_xy = (w, h) => [(w-ox)/sc, (scale-h-oy)/sc];
-
-        canvas.transform_to_xy = _wh_to_xy;
-        canvas.transform_to_wh = _xy_to_wh;
-        canvas.index_from_event = (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const wx = (e.clientX - rect.left)/rect.width*canvas.width;
-            const wy = (e.clientY - rect.top)/rect.height*canvas.height;
-            const [x, y] = _wh_to_xy(wx, wy);
-            const dx = this.dx/2;
-            const dy = this.dy/2;
-            let eleI = null;
-            for (let i = 0; i < this.length; i++){
-                if (((x - this.x[i])/dx)**2 + ((y - this.y[i])/dy)**2 <= 1) {
-                    eleI = i;
-                    break;
-                }
-            }
-            return eleI;
-        };
-        for (let i = 0; i < this.length; i++){
-            let [x, y] = _xy_to_wh(this.x[i], this.y[i]);
-            ctx.beginPath();
-            ctx.ellipse(x, y, dx, dy, 0.0, 0.0, 2*Math.PI);
-            ctx.closePath();
-            ctx.fillStyle = colormap(data[i]);
-            ctx.fill();
-            ctx.strokeStyle = strokeColor;
-            ctx.stroke();
-        }
-    }
 }
 
 export class RectangularGeometry extends Geometry{

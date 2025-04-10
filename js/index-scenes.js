@@ -1,9 +1,10 @@
-import {SceneControl, SceneControlWithSelector} from "./scene/scene-abc.js";
-import {ScenePlot1D} from "./scene/scene-plot-1d.js";
+import {SceneControl, SceneControlWithSelector, SceneParent} from "./scene/scene-abc.js";
+import {SceneQueue} from "./scene/scene-queue.js";
 import {Geometries} from "./phasedarray/geometry.js";
 import {PhasedArray} from "./phasedarray/phasedarray.js";
 import {FarfieldSpherical} from "./phasedarray/farfield.js"
 import {Tapers} from "./phasedarray/tapers.js"
+import {normalize} from "./util.js";
 
 export class SceneControlGeometry extends SceneControlWithSelector{
     constructor(parent){
@@ -28,61 +29,39 @@ export class SceneControlGeometry extends SceneControlWithSelector{
     }
 }
 
-const CMKEYPHASE = 'geometry-phase-colormap';
 const CMKEYATTEN = 'geometry-magnitude-colormap';
 
 export class SceneControlPhasedArray extends SceneControl{
     constructor(parent){
-        super(parent, ['theta', 'phi', 'atten-scale']);
+        super(parent, ['theta', 'phi']);
         this.pa = null;
-        this.create_mesh_colormap_selector(CMKEYPHASE, 'hsv');
         this.create_mesh_colormap_selector(CMKEYATTEN, 'inferno_r');
-        this.canvasPhase = this.find_element('geometry-phase-canvas');
         this.canvasAtten = this.find_element('geometry-magnitude-canvas');
-        this.install_hover_item(this.canvasAtten, (i) => `${this.pa.vectorAtten[i].toFixed(2)} dB`);
-        this.install_hover_item(this.canvasPhase, (i) => `${(this.pa.vectorPhase[i]*180/Math.PI).toFixed(2)} deg`);
+        this.geometryControl = new SceneControlGeometry(this);
+        this.taperControl = new SceneControlAllTapers(this);
     }
-    install_hover_item(canvas, callback){
-        this.parent.create_canvas_hover(canvas);
-        canvas.addEventListener('mousemove', (e) => {
-            let i = null;
-            let text = "&nbsp;";
-            if (e.isTrusted && this.pa !== null){
-                const f = canvas.index_from_event;
-                if (f !== undefined) i = f(e);
-            }
-            if (i !== null){
-                const geo = this.pa.geometry;
-                const t = callback(i);
-                text = `Element[${i}] (${geo.x[i].toFixed(2)}, ${geo.y[i].toFixed(2)}): ${t}`
-            }
-            canvas.hover_container.innerHTML = text;
-        });
-    }
+    /**
+    * Add callable objects to queue.
+    *
+    * @param {SceneQueue} queue
+    *
+    * @return {null}
+    * */
     add_to_queue(queue){
-        const geo = this.parent.geometryControl;
-        const taperX = this.parent.taperXControl;
-        const cmPhase = this.colormap[CMKEYPHASE];
         const cmAtten = this.colormap[CMKEYATTEN];
         let needsPhase = this.changed['theta'] || this.changed['phi'];
-        let needsAttenX = taperX.calculationWaiting;
-        let needsAttenY = false;
-        let needsAtten = false;
-        let phaseRescale = false;
-        let phaseChanged = false;
-        let attenChanged = false;
-        let phaseCMChanged = cmPhase.changed;
-        let attenCMChanged = cmAtten.changed;
-        let attenRescale = this.changed['atten-scale'];
+        let needsAtten = this.taperControl.calculationWaiting;
         this.farfieldNeedsCalculation = false
-        if (geo.calculationWaiting || this.pa === null || taperX.calculationWaiting){
+        this.geometryControl.add_to_queue(queue);
+        this.taperControl.add_to_queue(queue);
+
+        if (this.geometryControl.calculationWaiting || this.pa === null){
             queue.add('Updating array...', () => {
-                    this.pa = new PhasedArray(geo.activeGeometry, taperX.activeTaper);
+                    this.pa = new PhasedArray(this.geometryControl.activeGeometry);
                 }
             )
             needsPhase = true;
-            needsAttenX = true;
-            needsAttenY = true;
+            needsAtten = true;
             this.farfieldNeedsCalculation = true;
         }
         if (needsPhase){
@@ -94,75 +73,26 @@ export class SceneControlPhasedArray extends SceneControl{
                 this.pa.compute_phase();
                 this.clear_changed('theta', 'phi');
             });
-            phaseChanged = true;
             this.farfieldNeedsCalculation = true;
-        }
-        if (needsAttenX){
-            queue.add('Calculating X taper...', () => {
-                this.pa.calculate_x_taper();
-            });
-            needsAtten = true;
-        }
-        if (needsAttenY){
-            queue.add('Calculating Y taper...', () => {
-                this.pa.calculate_y_taper();
-            });
-            needsAtten = true;
         }
         if (needsAtten){
-            queue.add('Multiplying tapers...', () => {
-                this.pa.calculate_taper();
-            });
-            attenChanged = true;
+            this.taperControl.add_calculator_queue(queue, this);
             this.farfieldNeedsCalculation = true;
         }
-        if (attenChanged || phaseChanged){
+        if (needsAtten || needsPhase){
             queue.add('Calculating vector...', () => {
                 this.pa.calculate_final_vector();
             });
             queue.add('Calculating attenuation...', () => {
                 this.pa.calculate_attenuation();
             });
-            attenRescale = true;
-            phaseRescale = true;
         }
-        if (phaseRescale){
-            queue.add('Scaling phase...', () => {
-                this.pa.rescale_phase()
-            });
-            phaseCMChanged = true;
-        }
-        if (attenRescale){
-            queue.add('Scaling attenuation...', () => {
-                const scale = Math.abs(this.find_element('atten-scale').value)
-                this.pa.rescale_attenuation(-Math.max(5, scale));
-            });
-            this.clear_changed('atten-scale');
-            attenCMChanged = true;
-        }
-        if (phaseCMChanged){
-            queue.add('Drawing phase...', () => {
-                this.pa.draw_phase(
-                    this.canvasPhase,
-                    cmPhase.cmap(),
-                )
-                cmPhase.changed = false;
-            });
-        }
-        if (attenCMChanged){
-            queue.add('Drawing attenuation...', () => {
-                this.pa.draw_attenuation(
-                    this.canvasAtten,
-                    cmAtten.cmap(),
-                )
-                cmAtten.changed = false;
-            });
-        }
+        this.phaseChanged = needsPhase;
+        this.attenChanged = needsAtten;
     }
 }
 
 const CMKEYFARFIELD2D = 'farfield-2d-colormap';
-const CMKEYFARFIELD1D = 'farfield-1d-colormap';
 
 export class SceneControlFarfield extends SceneControl{
     constructor(parent){
@@ -175,30 +105,14 @@ export class SceneControlFarfield extends SceneControl{
         this.dirMax = null;
         this.eleMax = this.find_element('directivity-max', false);
         this.create_mesh_colormap_selector(CMKEYFARFIELD2D, 'viridis');
-        this.create_listed_colormap_selector(CMKEYFARFIELD1D);
-        this.canvas2D = this.find_element('farfield-canvas-2d');
-        this.canvas1D = this.find_element('farfield-canvas-1d');
-        this.plot1D = new ScenePlot1D(this.canvas1D, this.colormap[CMKEYFARFIELD1D]);
-        this.parent.create_canvas_hover(this.canvas2D);
-
-        this.canvas2D.addEventListener('mousemove', (e) => {
-            const canvas = this.canvas2D;
-            const f = canvas.index_from_event;
-            const ff = this.ff
-            let text = "HI";
-            if (f !== undefined && ff !== null && ff.dirMax != null){
-                const [it, ip] = f(e);
-                if (ip != null){
-                    const theta = ff.theta[it]*180/Math.PI;
-                    const phi = ff.phi[ip]*180/Math.PI;
-                    const ff1 = 10*Math.log10(ff.farfield_total[ip][it]/ff.maxValue);
-                    const ff2 = ff1 + 10*Math.log10(ff.dirMax);
-                    text = `(${theta.toFixed(2)}, ${phi.toFixed(2)}): ${ff2.toFixed(2)} dBi (${ff1.toFixed(2)} dB)`;
-                }
-            }
-            canvas.hover_container.innerHTML = text;
-        });
     }
+    /**
+    * Add callable objects to queue.
+    *
+    * @param {SceneQueue} queue
+    *
+    * @return {null}
+    * */
     add_to_queue(queue){
         const arrayControl = this.parent.arrayControl;
         const cm = this.colormap[CMKEYFARFIELD2D];
@@ -231,26 +145,13 @@ export class SceneControlFarfield extends SceneControl{
             });
             needsRedraw = true;
         }
-        if (needsRedraw){
-            queue.add('Creating farfield colormap...', () => {
-                this.ff.create_colormap(cm.cmap());
-                cm.changed = false;
-            });
-            queue.add('Drawing 2D farfield...', () => {
-                this.ff.draw_polar(this.canvas2D);
-            });
-        }
-        if (needsRedraw || this.plot1D.redrawWaiting){
-            queue.add('Drawing 1D farfield...', () => {
-                this.ff.create_1d_plot(this.plot1D);
-            });
-        }
+        this.needsRedraw = needsRedraw;
     }
 }
 
 export class SceneControlTaper extends SceneControlWithSelector{
-    constructor(parent){
-        super(parent, 'taper-x', Tapers);
+    constructor(parent, key){
+        super(parent, 'taper', Tapers, key);
         this.activeTaper = null;
     }
     control_changed(key){
@@ -260,12 +161,161 @@ export class SceneControlTaper extends SceneControlWithSelector{
     get calculationWaiting(){
         return this.activeTaper === null;
     }
+    /**
+    * Add callable objects to queue.
+    *
+    * @param {SceneQueue} queue
+    *
+    * @return {null}
+    * */
     add_to_queue(queue){
         if (this.calculationWaiting){
             queue.add('Building Taper...', () => {
                     this.activeTaper = this.build_active_object();
                 }
             )
+        }
+    }
+    /**
+    * Build a taper control object.
+    *
+    * @param {SceneParent} parent
+    * @param {String} key "x" or "y"
+    *
+    * @return {SceneControlTaper}
+    * */
+    static build(parent, key){
+        const element = parent.find_element('taper-' + key + '-group')
+        const k = parent.prepend + "-" + key + "-taper";
+        const _create_group = (p) => {
+            let kk = k;
+            if (p !== undefined) kk += "-" + p;
+            kk += "-div";
+            var div = document.createElement('div');
+            div.className = 'form-group';
+            div.id = kk;
+            element.appendChild(div);
+            return div;
+        }
+        const _create_lbl = (div, p) => {
+            let kk = k;
+            if (p !== undefined) kk += "-" + p;
+            const lbl = document.createElement("label");
+            lbl.setAttribute("for", kk);
+            div.appendChild(lbl);
+            return lbl;
+        }
+        const _create_input = (div, p) => {
+            let kk = k;
+            if (p !== undefined) kk += "-" + p;
+            const inp = document.createElement("input");
+            inp.id = kk;
+            inp.setAttribute('type', 'Number');
+            inp.setAttribute('min', "0");
+            inp.setAttribute('max', "100");
+            inp.setAttribute('name', kk);
+            inp.setAttribute('value', "0");
+            div.appendChild(inp);
+            return inp;
+        }
+
+        const div0 = _create_group();
+        const div1 = _create_group('par-1');
+        const div2 = _create_group('par-2');
+
+        const lbl0 = _create_lbl(div0);
+        lbl0.innerHTML = key.toUpperCase() + "-Taper";
+
+        const sel0 = document.createElement("select");
+        sel0.id = k;
+        div0.appendChild(sel0);
+
+        _create_lbl(div1, 'par-1');
+        _create_input(div1, 'par-1');
+        _create_lbl(div2, 'par-2');
+        _create_input(div2, 'par-2');
+        return new SceneControlTaper(parent, key);
+    }
+}
+
+export class SceneControlAllTapers extends SceneControl{
+    constructor(parent){
+        super(parent, ['taper-sampling']);
+        this.xControl = SceneControlTaper.build(parent, 'x');
+        this.yControl = SceneControlTaper.build(parent, 'y');
+    }
+    get calculationWaiting(){
+        return (
+            this.xControl.calculationWaiting
+            || this.yControl.calculationWaiting
+            || this.changed['taper-sampling']
+        );
+    }
+    control_changed(key){
+        super.control_changed(key);
+        const eleX = this.parent.find_element('taper-x-group');
+        const eleY = this.parent.find_element('taper-y-group');
+        if (this.find_element('taper-sampling')[1].selected){
+            eleY.style.display = 'none';
+            eleX.querySelector("label").innerHTML = "R-Taper";
+        }
+        else{
+            eleY.style.display = 'block'
+            eleX.querySelector("label").innerHTML = "X-Taper";
+        }
+    }
+    /**
+    * Add callable objects to queue.
+    *
+    * @param {SceneQueue} queue
+    *
+    * @return {null}
+    * */
+    add_to_queue(queue){
+        this.xControl.add_to_queue(queue);
+        this.yControl.add_to_queue(queue);
+    }
+    /**
+    * Add callable objects to queue AFTER phased array
+    * is created.
+    *
+    * @param {SceneQueue} queue
+    * @param {SceneControlPhasedArray} src
+    *
+    * @return {null}
+    * */
+    add_calculator_queue(queue, src){
+        if (this.find_element('taper-sampling')[0].selected){
+            let taperX, taperY;
+            // we're doing x/y sampling.
+            queue.add("Calculating X taper...", () => {
+                this.clear_changed('taper-sampling');
+                const t = this.xControl.activeTaper;
+                taperX = t.calculate_weights(normalize(src.pa.geometry.x));
+            });
+            queue.add("Calculating Y taper...", () => {
+                const t = this.yControl.activeTaper;
+                taperY = t.calculate_weights(normalize(src.pa.geometry.y));
+            });
+            queue.add("Multiplying tapers...", () => {
+                src.pa.set_magnitude_weight(Float32Array.from(taperX, (x, i) => x * taperY[i]));
+            });
+        }
+        else{
+            let geor;
+            // we're doing r sampling.
+            queue.add("Calculating radial information...", () => {
+                this.clear_changed('taper-sampling');
+                const x = normalize(src.pa.geometry.x);
+                const y = normalize(src.pa.geometry.y);
+                const r = Float32Array.from(x, (ix, i) => Math.sqrt(ix**2 + y[i]**2));
+                const maxR = Math.max(...r);
+                geor = Float32Array.from(r, (v) => v/maxR*0.5);
+            });
+            queue.add("Calculating taper...", () => {
+                const t = this.xControl.activeTaper;
+                src.pa.set_magnitude_weight(t.calculate_weights(geor))
+            });
         }
     }
 }

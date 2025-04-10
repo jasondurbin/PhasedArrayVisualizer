@@ -111,7 +111,7 @@ a:hover{
     border-radius: 5px;
     font-weight: bold;
     text-decoration: none;
-    cursor: default;
+    cursor: pointer;
     border: none;
 }
 .theme-toggle:hover{
@@ -172,11 +172,18 @@ select{
 }
 .form-group{
     display: flex;
-    gap: 10px;
+    gap: 5px;
     margin-top: 5px;
 }
 .form-group label{
     flex-grow: 1;
+    margin: auto;
+    font-size: 0.9em;
+    white-space: nowrap;
+    text-align: right;
+}
+.form-group select{
+    width: 100%;
 }
 .canvas-grid,
 .canvas-full{

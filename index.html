@@ -37,7 +37,8 @@
 <body class="auto">
     <div class="text-group" style="text-align:center;">
         <h1>Phased Array Visualizer</h1>
-        <div>Theme: <button class="theme-toggle">auto</button></div>
+        <p>By: <a href="http://jasonleodurbin.com" target="_blank">Jason Durbin</a> (<a href="https://www.linkedin.com/in/jasondurbin/" target="_blank">LinkedIn</a>).</p>
+        <div>Dark Mode: <button class="theme-toggle">auto</button></div>
         <br>
     </div>
     <div class="text-group">
@@ -79,15 +80,12 @@
             </div>
             <div>
                 <h3>Taper Parameters</h3>
-                <select id="pa-taper-x" style="width:100%"></select>
-                <div class="form-group" id="pa-taper-x-par-1-div">
-                    <label for="pa-taper-x-par-1">Taper Parameter 1</label>
-                    <input type="number" id="pa-taper-x-par-1" min="0", max="100" name="pa-taper-x-par-1" value="0.0" />
+                <div class="form-group" id="pa-taper-sampling-div">
+                    <label for="pa-taper-sampling">Sampling</label>
+                    <select id="pa-taper-sampling"><option>X & Y</option><option>Radial</option></select>
                 </div>
-                <div class="form-group" id="pa-taper-x-par-2-div">
-                    <label for="pa-taper-x-par-2">Taper Parameter 2</label>
-                    <input type="number" id="pa-taper-x-par-2" min="0", max="100" name="pa-taper-x-par-2" value="20" />
-                </div>
+                <div id="pa-taper-x-group"></div>
+                <div id="pa-taper-y-group"></div>
             </div>
         </div>
         <div class="pa-update-div">
@@ -147,6 +145,7 @@
                 <div class="canvas-legend">
                     <span class="legend-item" data-cut="0" data-visible="true">Phi = 0 deg</span>
                     <span class="legend-item" data-cut="90" data-visible="true">Phi = 90 deg</span>
+                    <span style='font-size:0.65em'>Click to hide/show trace.</span>
                 </div>
                 <div>
                     <label for="pa-farfield-1d-colormap">Colormap</label>

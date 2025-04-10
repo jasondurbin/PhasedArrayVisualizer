@@ -6,7 +6,7 @@ import {SceneParent} from "./scene/scene-abc.js"
 import {SceneQueue} from "./scene/scene-queue.js";
 import {SceneTheme} from "./scene/scene-theme.js";
 
-window.addEventListener('load', () => {
+document.addEventListener('DOMContentLoaded', () => {
     new SceneTheme();
     const scene = new PhasedArrayScene('pa');
     scene.build_state_machine();

@@ -11,15 +11,19 @@ export class PhasedArray{
         this.geometry = geometry;
         this.set_theta_phi(0, 0);
         this.size = geometry.length;
+
         this.vectorPhaseRaw = new Float32Array(this.size);
         this.vectorPhaseManual = zeros(this.size);
         this.vectorPhaseIsManual = Array.from({length: this.size}, () => false);
+        this.vectorPhase = new Float32Array(this.size);
+        this.vectorPhasePure = new Float32Array(this.size);
+
         this.vectorMagRaw = new Float32Array(this.size);
         this.vectorMagManual = zeros(this.size);
         this.vectorMagIsManual = Array.from({length: this.size}, () => false);
         this.elementDisabled = Array.from({length: this.size}, () => false);
-        this.vectorPhase = new Float32Array(this.size);
         this.vectorMag = new Float32Array(this.size);
+        this.vectorMagPure = new Float32Array(this.size);
         this.vectorAtten = new Float32Array(this.size);
         this.requestUpdate = true;
     }
@@ -34,8 +38,9 @@ export class PhasedArray{
 
         const x = this.geometry.x;
         const y = this.geometry.y;
+        const p = -2*Math.PI;
         for (let i = 0; i < this.geometry.length; i++){
-            this.vectorPhaseRaw[i] = -2*Math.PI*((x[i]*xf + y[i]*yf) % 1.0)
+            this.vectorPhaseRaw[i] = p*((x[i]*xf + y[i]*yf) % 1.0);
         }
     }
     calculate_r_taper(){
@@ -95,17 +100,54 @@ export class PhasedArray{
                 m = Math.abs(m)
                 p += Math.PI;
             }
-            this.vectorPhase[i] = p;
-            this.vectorMag[i] = m;
+            this.vectorPhasePure[i] = p;
+            this.vectorMagPure[i] = m;
         }
+        this.requestUpdate = false;
     }
     calculate_attenuation(){
-        const maxV = Math.max(...this.vectorMag);
+        const maxV = Math.max(...this.vectorMagPure);
         for (let i = 0; i < this.geometry.length; i++){
-            let m = this.vectorMag[i]/maxV;
-            this.vectorMag[i] = m;
-            this.vectorAtten[i] = 20*Math.log10(Math.abs(m));
+            let m = this.vectorMagPure[i]/maxV;
+            this.vectorMagPure[i] = m;
+            this.vectorAttenPure[i] = 20*Math.log10(Math.abs(m));
         }
-        this.requestUpdate = true;
+        this.requestUpdate = false;
+    }
+    quantize_phase(bits){
+        let lsb = 0;
+        if (bits > 0) lsb = 2*Math.PI/2**bits;
+
+        for (let i = 0; i < this.geometry.length; i++){
+            let p = this.vectorPhasePure[i];
+            if (bits <= 0) this.vectorPhase[i] = p;
+            else{
+                while (p < 0) p += 2*Math.PI;
+                this.vectorPhase[i] = lsb*Math.round(p/lsb);
+            }
+        }
+    }
+    quantize_attenuation(bits, lsb){
+        const maxQ = lsb*(2**bits - 1);
+        const maxV = Math.max(...this.vectorMagPure);
+        for (let i = 0; i < this.geometry.length; i++){
+            let m = this.vectorMagPure[i]/maxV;
+            let a = -20*Math.log10(Math.abs(m));
+            if (bits <= 0 || lsb <= 0){
+                this.vectorMag[i] = m;
+                this.vectorAtten[i] = -a;
+            }
+            else{
+                a = lsb*Math.round(a/lsb);
+                if (a > maxQ){
+                    this.vectorAtten[i] = -Infinity;
+                    this.vectorMag[i] = 0;
+                }
+                else{
+                    this.vectorAtten[i] = -a;
+                    this.vectorMag[i] = 10**(-a/20.0);
+                }
+            }
+        }
     }
 }

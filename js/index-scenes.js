@@ -29,7 +29,7 @@ export class SceneControlGeometry extends SceneControlWithSelector{
 
 export class SceneControlPhasedArray extends SceneControl{
     constructor(parent){
-        super(parent, ['theta', 'phi']);
+        super(parent, ['theta', 'phi', 'phase-bits', 'atten-lsb', 'atten-bits']);
         this.pa = null;
         this.geometryControl = new SceneControlGeometry(this);
         this.taperControl = new SceneControlAllTapers(this);
@@ -50,6 +50,8 @@ export class SceneControlPhasedArray extends SceneControl{
         let needsPhase = this.changed['theta'] || this.changed['phi'];
         let needsAtten = this.taperControl.calculationWaiting;
         let needsRecalc = false;
+        let needsPhaseQ = this.changed['phase-bits'];
+        let needsAttenQ = this.changed['atten-bits'] || this.changed['atten-lsb'];
         this.farfieldNeedsCalculation = false
         this.geometryControl.add_to_queue(queue);
         this.taperControl.add_to_queue(queue);
@@ -86,10 +88,25 @@ export class SceneControlPhasedArray extends SceneControl{
             queue.add('Calculating vector...', () => {
                 this.pa.calculate_final_vector();
             });
-            queue.add('Calculating attenuation...', () => {
-                this.pa.calculate_attenuation();
+            needsPhaseQ = true;
+            needsAttenQ = true;
+        }
+        if (needsPhaseQ){
+            queue.add('Quantizing phase...', () => {
+                const bits = Math.max(0, Math.min(10, this.find_element('phase-bits').value));
+                this.pa.quantize_phase(bits);
                 this.trigger_event('phased-array-phase-changed', this.pa);
+                this.clear_changed('phase-bits');
+            });
+            this.farfieldNeedsCalculation = true;
+        }
+        if (needsAttenQ){
+            queue.add('Quantizing attenuation...', () => {
+                const bits = Math.max(0, Math.min(10, this.find_element('atten-bits').value));
+                const lsb = Math.max(0, Math.min(5, this.find_element('atten-lsb').value));
+                this.pa.quantize_attenuation(bits, lsb);
                 this.trigger_event('phased-array-attenuation-changed', this.pa);
+                this.clear_changed('atten-bits', 'atten-lsb');
             });
             this.farfieldNeedsCalculation = true;
         }

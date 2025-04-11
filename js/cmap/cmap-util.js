@@ -1,32 +1,32 @@
 export class ColormapControl{
-    constructor(selector, defaultSelection){
-        this.changed = true;
-        this.selector = selector;
-        if (defaultSelection === undefined) defaultSelection = 'viridis';
-        this.defaultSelection = defaultSelection;
-        this.constructor.Colormaps.forEach((cm) => {
-            const ele = document.createElement('option');
-            ele.value = cm;
-            ele.innerHTML = cm;
-            selector.appendChild(ele);
-            if (defaultSelection == cm) ele.selected = true;
-        });
-        selector.addEventListener('change', () => {
-            this.changed = true;
-        });
-        window.installThemeChanged(() => {
-            this.changed = true;
-        });
-    }
-    addEventListener(e, callback){ this.selector.addEventListener(e, callback); }
-    cmap(){
-        const cms = this.constructor.Colormaps;
-        const find_colormap = this.constructor.find_colormap;
-        for (let i = 0; i < cms.length; i++)
-            if (this.selector[i].selected)
-                return find_colormap(cms[i]);
-        return find_colormap(this.defaultSelection);
-    }
+	constructor(selector, defaultSelection){
+		this.changed = true;
+		this.selector = selector;
+		if (defaultSelection === undefined) defaultSelection = 'viridis';
+		this.defaultSelection = defaultSelection;
+		this.constructor.Colormaps.forEach((cm) => {
+			const ele = document.createElement('option');
+			ele.value = cm;
+			ele.innerHTML = cm;
+			selector.appendChild(ele);
+			if (defaultSelection == cm) ele.selected = true;
+		});
+		selector.addEventListener('change', () => {
+			this.changed = true;
+		});
+		window.installThemeChanged(() => {
+			this.changed = true;
+		});
+	}
+	addEventListener(e, callback){ this.selector.addEventListener(e, callback); }
+	cmap(){
+		const cms = this.constructor.Colormaps;
+		const find_colormap = this.constructor.find_colormap;
+		for (let i = 0; i < cms.length; i++)
+			if (this.selector[i].selected)
+				return find_colormap(cms[i]);
+		return find_colormap(this.defaultSelection);
+	}
 }
 
 /**
@@ -38,46 +38,46 @@ export class ColormapControl{
  * @returns {String} - rbg color.
  */
 export function hsv2rgb(h, s, v){
-    let r, g, b;
+	let r, g, b;
 
-    const i = Math.floor(h * 6);
-    const f = h * 6 - i;
-    const p = v * (1 - s);
-    const q = v * (1 - f * s);
-    const t = v * (1 - (1 - f) * s);
+	const i = Math.floor(h * 6);
+	const f = h * 6 - i;
+	const p = v * (1 - s);
+	const q = v * (1 - f * s);
+	const t = v * (1 - (1 - f) * s);
 
-    switch (i % 6){
-        case 0:
-            r = v;
-            g = t;
-            b = p;
-            break;
-        case 1:
-            r = q;
-            g = v;
-            b = p;
-            break;
-        case 2:
-            r = p;
-            g = v;
-            b = t;
-            break;
-        case 3:
-            r = p;
-            g = q;
-            b = v;
-            break;
-        case 4:
-            r = t;
-            g = p;
-            b = v;
-            break;
-        case 5:
-            r = v;
-            g = p;
-            b = q;
-            break;
-    }
+	switch (i % 6){
+		case 0:
+			r = v;
+			g = t;
+			b = p;
+			break;
+		case 1:
+			r = q;
+			g = v;
+			b = p;
+			break;
+		case 2:
+			r = p;
+			g = v;
+			b = t;
+			break;
+		case 3:
+			r = p;
+			g = q;
+			b = v;
+			break;
+		case 4:
+			r = t;
+			g = p;
+			b = v;
+			break;
+		case 5:
+			r = v;
+			g = p;
+			b = q;
+			break;
+	}
 
-    return `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`;
+	return `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`;
 }

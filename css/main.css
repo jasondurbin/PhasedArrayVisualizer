@@ -1,227 +1,357 @@
+:root{
+	--bg-color-dark: #121212;
+	--text-color-dark: #AAA;
+	--grid-color-dark: #CCC;
+	--canvas-border-color-dark: #000;
+	--settings-border-color-dark: #666666;
+	--settings-bg-color-dark: #121244;
+	--input-bg-color-dark: #333333;
+	--input-border-color-dark: #333333;
+	--link-color-dark: #AAF;
+	--theme-bg-color-dark: #444;
+	--theme-color-dark: #EEE;
+	--shadow-dark: #000;
 
-:root {
-    --bg-color-dark: #121212;
-    --text-color-dark: #AAA;
-    --canvas-border-color-dark: #000;
-    --settings-border-color-dark: #666666;
-    --settings-bg-color-dark: #121244;
-    --input-bg-color-dark: #333333;
-    --input-border-color-dark: #333333;
-    --link-color-dark: #AAF;
-    --theme-bg-color-dark: #444;
-    --theme-color-dark: #EEE;
-    --shadow-dark: #000;
-
-    --bg-color-light: #FFFFFF;
-    --text-color-light: #333;
-    --input-bg-color-light: #FFFFFF;
-    --input-border-color-light: #cccccc;
-    --canvas-border-color-light: #222;
-    --settings-border-color-light: #666666;
-    --settings-bg-color-light: #EEF;
-    --link-color-light: #33F;
-    --theme-bg-color-light: #EEE;
-    --theme-color-light: #333;
-    --shadow-light: #0003;
+	--bg-color-light: #FFFFFF;
+	--text-color-light: #333;
+	--input-bg-color-light: #FFFFFF;
+	--input-border-color-light: #cccccc;
+	--canvas-border-color-light: #222;
+	--settings-border-color-light: #666666;
+	--settings-bg-color-light: #EEF;
+	--link-color-light: #33F;
+	--theme-bg-color-light: #EEE;
+	--theme-color-light: #333;
+	--shadow-light: #0003;
+	--grid-color-light: #555;
 }
-:root.dark {
-    --bg-color: var(--bg-color-dark);
-    --text-color: var(--text-color-dark);
-    --input-bg-color: var(--input-bg-color-dark);
-    --input-border-color: var(--input-border-color-dark);
-    --canvas-border-color: var(--canvas-border-color-dark);
-    --settings-border-color: var(--settings-border-color-dark);
-    --settings-bg-color: var(--settings-bg-color-dark);
-    --link-color: var(--link-color-dark);
-    --theme-bg-color: var(--theme-bg-color-dark);
-    --theme-color: var(--theme-color-dark);
-    --shadow: var(--shadow-dark);
+:root.dark{
+	--bg-color: var(--bg-color-dark);
+	--text-color: var(--text-color-dark);
+	--input-bg-color: var(--input-bg-color-dark);
+	--input-border-color: var(--input-border-color-dark);
+	--canvas-border-color: var(--canvas-border-color-dark);
+	--settings-border-color: var(--settings-border-color-dark);
+	--settings-bg-color: var(--settings-bg-color-dark);
+	--link-color: var(--link-color-dark);
+	--theme-bg-color: var(--theme-bg-color-dark);
+	--theme-color: var(--theme-color-dark);
+	--shadow: var(--shadow-dark);
+	--grid-color: var(--grid-color-dark);
 }
-:root.light {
-    --bg-color: var(--bg-color-light);
-    --text-color: var(--text-color-light);
-    --input-bg-color: var(--input-bg-color-light);
-    --input-border-color: var(--input-border-color-light);
-    --canvas-border-color: var(--canvas-border-color-light);
-    --settings-border-color: var(--settings-border-color-light);
-    --settings-bg-color: var(--settings-bg-color-light);
-    --link-color: var(--link-color-light);
-    --theme-bg-color: var(--theme-bg-color-light);
-    --theme-color: var(--theme-color-light);
-    --shadow: var(--shadow-light);
+:root.light{
+	--bg-color: var(--bg-color-light);
+	--text-color: var(--text-color-light);
+	--input-bg-color: var(--input-bg-color-light);
+	--input-border-color: var(--input-border-color-light);
+	--canvas-border-color: var(--canvas-border-color-light);
+	--settings-border-color: var(--settings-border-color-light);
+	--settings-bg-color: var(--settings-bg-color-light);
+	--link-color: var(--link-color-light);
+	--theme-bg-color: var(--theme-bg-color-light);
+	--theme-color: var(--theme-color-light);
+	--shadow: var(--shadow-light);
+	--grid-color: var(--grid-color-light);
 }
-@media (prefers-color-scheme: dark) {
-    :root.auto {
-        --bg-color: var(--bg-color-dark);
-        --text-color: var(--text-color-dark);
-        --input-bg-color: var(--input-bg-color-dark);
-        --input-border-color: var(--input-border-color-dark);
-        --canvas-border-color: var(--canvas-border-color-dark);
-        --settings-border-color: var(--settings-border-color-dark);
-        --settings-bg-color: var(--settings-bg-color-dark);
-        --link-color: var(--link-color-dark);
-        --theme-bg-color: var(--theme-bg-color-dark);
-        --theme-color: var(--theme-color-dark);
-        --shadow: var(--shadow-dark);
-    }
+@media (prefers-color-scheme: dark){
+	:root.auto{
+		--bg-color: var(--bg-color-dark);
+		--text-color: var(--text-color-dark);
+		--input-bg-color: var(--input-bg-color-dark);
+		--input-border-color: var(--input-border-color-dark);
+		--canvas-border-color: var(--canvas-border-color-dark);
+		--settings-border-color: var(--settings-border-color-dark);
+		--settings-bg-color: var(--settings-bg-color-dark);
+		--link-color: var(--link-color-dark);
+		--theme-bg-color: var(--theme-bg-color-dark);
+		--theme-color: var(--theme-color-dark);
+		--shadow: var(--shadow-dark);
+		--grid-color: var(--grid-color-dark);
+	}
 }
-@media (prefers-color-scheme: light) {
-    :root.auto {
-        --bg-color: var(--bg-color-light);
-        --text-color: var(--text-color-light);
-        --input-bg-color: var(--input-bg-color-light);
-        --input-border-color: var(--input-border-color-light);
-        --canvas-border-color: var(--canvas-border-color-light);
-        --settings-border-color: var(--settings-border-color-light);
-        --settings-bg-color: var(--settings-bg-color-light);
-        --link-color: var(--link-color-light);
-        --theme-bg-color: var(--theme-bg-color-light);
-        --theme-color: var(--theme-color-light);
-        --shadow: var(--shadow-light);
-    }
+@media (prefers-color-scheme: light){
+	:root.auto{
+		--bg-color: var(--bg-color-light);
+		--text-color: var(--text-color-light);
+		--input-bg-color: var(--input-bg-color-light);
+		--input-border-color: var(--input-border-color-light);
+		--canvas-border-color: var(--canvas-border-color-light);
+		--settings-border-color: var(--settings-border-color-light);
+		--settings-bg-color: var(--settings-bg-color-light);
+		--link-color: var(--link-color-light);
+		--theme-bg-color: var(--theme-bg-color-light);
+		--theme-color: var(--theme-color-light);
+		--shadow: var(--shadow-light);
+		--grid-color: var(--grid-color-light);
+	}
 }
-body {
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    font-family: Arial, sans-serif;
-    margin: 0px;
-    transition: 0.3s;
-    background-color: var(--bg-color);
-    color: var(--text-color);
+body{
+	padding: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+	font-family: Arial, sans-serif;
+	margin: 10px;
+	transition: 0.3s;
+	background-color: var(--bg-color);
+	color: var(--text-color);
 }
-a {
-    color: var(--link-color);
-    text-decoration: none;
+a{
+	color: var(--link-color);
+	text-decoration: none;
 }
 a:hover{
-    text-decoration: underline;
+	text-decoration: underline;
 }
-.theme-toggle {
-    background-color: var(--theme-bg-color);
-    color: var(--theme-color);
-    padding: 5px;
-    border-radius: 5px;
-    font-weight: bold;
-    text-decoration: none;
-    cursor: default;
-    border: none;
+.body-content{
+	max-width: 800px;
+}
+.theme-toggle{
+	background-color: var(--theme-bg-color);
+	color: var(--theme-color);
+	padding: 5px;
+	border-radius: 5px;
+	font-weight: bold;
+	text-decoration: none;
+	cursor: pointer;
+	border: none;
 }
 .theme-toggle:hover{
-    transition: 0.3s;
-    box-shadow:3px 3px var(--shadow);
+	transition: 0.3s;
+	box-shadow:3px 3px var(--shadow);
 }
 input,
 textarea,
-select {
-    background-color: var(--input-bg-color);
-    color: var(--text-color);
-    border: 1px solid var(--input-border-color);
-    padding: 4px;
-    transition: 0.3s;
+select{
+	background-color: var(--input-bg-color);
+	color: var(--text-color);
+	border: 1px solid var(--input-border-color);
+	padding: 4px;
+	transition: 0.3s;
 }
 #pa-refresh{
-    width: 200px;
-    height: 40px;
+	width: 200px;
+	height: 40px;
 }
-#pa-progress {
-    width: 200px;
-    display: block;
+#pa-progress{
+	width: 200px;
+	display: block;
 }
 #pa-status{
-    font-size: 0.9em;
-    width: 200px;
-    text-align: center;
+	font-size: 0.9em;
+	width: 200px;
+	text-align: center;
 }
-.pa-update-div {
-    width: 200px;
-    margin: auto;
+.pa-update-div{
+	width: 200px;
+	margin: auto;
 }
-.text-group {
-    font-size: 16px;
-    margin: 0px 0;
-    width: 100%;
+.text-group{
+	font-size: 16px;
+	margin: 0px 0;
+	width: 100%;
 }
-.main-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    width: 100%;
-}
-.pa-settings {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    width: 100%;
-    margin: 5px 0 5px 0;
+.pa-settings{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	justify-content: center;
+	width: 100%;
+	margin: 5px 0 5px 0;
 }
 .pa-settings h3{
-    margin: 4px;
+	margin: 10px 0;
+	display: block;
+	text-align: center;
 }
-.pa-settings > div {
-    background-color: var(--settings-bg-color);
-    padding: 10px;
-    border: 1px solid var(--settings-border-color);
-    min-width: 170px;
-    border-radius: 5px;
+.pa-settings > div{
+	background-color: var(--settings-bg-color);
+	padding: 5px;
+	border: 1px solid var(--settings-border-color);
+	min-width: 170px;
+	border-radius: 5px;
 }
-.form-group {
-    display: flex;
-    gap: 10px;
-    margin-top: 5px;
+.form-group{
+	display: flex;
+	gap: 5px;
+	margin-top: 5px;
 }
 .form-group label{
-    flex-grow: 1;
+	flex-grow: 1;
+	margin: auto;
+	font-size: 0.9em;
+	white-space: nowrap;
+	text-align: right;
 }
-.canvas-container {
-    width: 30%;
-    display: block;
-    text-align: center;
+.form-group select{
+	width: 100%;
 }
-.canvas-container h2 {
-    margin: 0;
+.canvas-grid,
+.canvas-full{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	justify-content: center;
+	width: 100%;
 }
-.canvas-wrapper {
-    position: relative;
-    width: 100%;
-    padding-top: 100%;
-    box-sizing: border-box;
+.canvas-grid .canvas-container{
+	width: 30%;
+	display: block;
+	text-align: center;
 }
-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: 1px solid var(--canvas-border-color);
-    box-shadow:3px 3px var(--shadow);
-    box-sizing: border-box;
+.canvas-full .canvas-container{
+	width: 100%;
+	display: block;
+	text-align: center;
+	max-width: 800px;
 }
-.canvas-header {
-    margin: 10px 0;
+.canvas-full .canvas-footer{
+	display: flex;
+	gap: 10px;
+	width: 100%;
+	flex-direction: row;
 }
-.canvas-footer {
-    margin: 10px 0;
-    text-align: right;
+.canvas-legend{
+	text-align: left;
 }
-@media (max-width: 1024px) {
-    .main-container { flex-wrap: wrap; }
-    .canvas-container { width: 45%; }
-    .canvas-container:nth-child(3) { width: 90%; }
+.legend-item{
+	border: 1px solid var(--theme-bg-color);
+	padding: 2px;
+	cursor: pointer;
+	box-sizing: border-box;
+	display: inline-block;
 }
-@media (max-width: 600px) {
-    .main-container {
-        flex-direction: column;
-        gap: 0px;
-    }
-    .canvas-container {
-        box-sizing: border-box;
-        width: 100%;
-    }
-    .canvas-container:nth-child(3) { width: 100%; }
+.legend-item.disabled{
+	text-decoration: line-through;
+}
+.canvas-full .canvas-footer div{
+	width: 50%;
+}
+.canvas-container h2,
+.canvas-container-full h2{
+	margin: 0;
+}
+.canvas-grid .canvas-wrapper{
+	position: relative;
+	width: 100%;
+	padding-top: 100%;
+	box-sizing: border-box;
+}
+.canvas-grid canvas{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+.canvas-full canvas{
+	width: 100%;
+	height: 100%;
+}
+canvas{
+	border: 1px solid var(--canvas-border-color);
+	box-shadow: 3px 3px var(--shadow);
+	box-sizing: border-box;
+}
+.canvas-header{
+	margin: 10px 0 0 0;
+}
+.canvas-header progress{
+	width: 100%;
+	height: 2px;
+	margin: 0px;
+	padding: 0px;
+	display: block;
+	margin: 2px 0 0 0;
+	border: none;
+}
+.canvas-hover-div{
+	font-size: 0.8em;
+	margin: 0px;
+}
+.canvas-footer{
+	margin: 4px 0 10px 0;
+	text-align: right;
+	font-size: 0.8em;
+}
+#popup-overlay{
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.5);
+	display: none;
+	z-index: 999;
+}
+.popup{
+	position: absolute;
+	background:var(--bg-color);
+	border: 2px solid var(--settings-border-color);
+	padding: 10px;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+	z-index: 1000;
+	flex-direction: column;
+	gap: 4px;
+}
+.popup h3{
+	padding: 0;
+	margin: 0;
+	width: 100%;
+	text-align: center;
+}
+.popup form > div{
+	display: flex;
+	gap: 4px;
+	flex-direction: row;
+	width: 100%;
+	margin: 4px 0;
+	padding: 0;
+}
+.popup form span{
+	margin: auto;
+	font-size: 0.9em;
+	text-align: right;
+}
+.popup form label{
+	flex-grow: 1;
+	margin: auto;
+	font-size: 0.9em;
+	white-space: nowrap;
+	text-align: right;
+}
+.popup form select{
+	width: 100%;
+}
+.popup form .popup-buttons{
+	text-align: right;
+	display: block;
+	margin: 10px 0 0 0;
+}
+.popup form .popup-buttons button{
+	margin-left: 4px;
+}
+@media (max-width: 1024px){
+	.canvas-grid{ flex-wrap: wrap; }
+	.canvas-grid .canvas-container{ width: 45%; }
+	.canvas-grid .canvas-container:nth-child(3){ width: 90%; }
+}
+@media (max-width: 600px){
+	.canvas-grid{
+		flex-direction: column;
+		gap: 0px;
+	}
+	.canvas-grid .canvas-container{
+		box-sizing: border-box;
+		width: 100%;
+	}
+	.canvas-grid .canvas-container:nth-child(3){ width: 100%; }
+
+	.canvas-full .canvas-footer{
+		flex-direction: column;
+	}
+	.canvas-full .canvas-footer div{
+		width: 100%;
+	}
 }

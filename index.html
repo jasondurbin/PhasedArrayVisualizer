@@ -1,171 +1,196 @@
 <!DOCTYPE html>
 <html lang="en" class="auto">
 <head>
-    <meta charset="UTF-8">
-    <title>Phased Array Visualizer</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="./assets/favicon.png" />
-    <link rel="stylesheet" href="./css/main.css">
-    <meta name="description" content="Phased array visualizer by Jason Durbin." />
-    <meta name="keywords" content="Phased Array" />
+	<meta charset="UTF-8">
+	<title>Phased Array Visualizer</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1">
+	<link rel="shortcut icon" href="./assets/favicon.png" />
+	<link rel="stylesheet" href="./css/main.css">
+	<meta name="description" content="Phased array visualizer by Jason Durbin." />
+	<meta name="keywords" content="Phased Array" />
 
-    <meta property="og:url" content="https://jasondurbin.github.io/PhasedArrayVisualizer/" />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Phased Array Visualizer" />
-    <meta property="og:description" content="Phased array visualizer by Jason Durbin." />
-    <meta property="og:image" content="./assets/favicon.png" />
+	<meta property="og:url" content="https://jasondurbin.github.io/PhasedArrayVisualizer/" />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="Phased Array Visualizer" />
+	<meta property="og:description" content="Phased array visualizer by Jason Durbin." />
+	<meta property="og:image" content="./assets/favicon.png" />
+	<script type="module" src="./js/index.js" defer></script>
 
-    <script type="module">
-        import {Scene} from "./js/main.js";
-        import {find_colormap} from "./js/cmap.js";
-        window.addEventListener('load', (e) => {
-            const scene = new Scene('pa');
-            scene.start_state_machine();
-            const ttg = document.querySelector('.theme-toggle');
-            ttg.addEventListener('click', () => {
-                if (ttg.innerHTML.includes('dark')) {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.classList.remove('auto');
-                    document.documentElement.classList.add('light');
-                    ttg.innerHTML = 'light';
-                }
-                else if (ttg.innerHTML.includes('light')) {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.classList.add('auto');
-                    document.documentElement.classList.remove('light');
-                    ttg.innerHTML = 'auto';
-                }
-                else {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.classList.remove('auto');
-                    document.documentElement.classList.remove('light');
-                    ttg.innerHTML = 'dark';
-                }
-            });
-        });
-    </script>
-    <!-- Matomo -->
-    <script>
-        var _paq = window._paq = window._paq || [];
-        /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
-        _paq.push(['trackPageView']);
-        _paq.push(['enableLinkTracking']);
-        (function() {
-            var u="//webanalytics.neonphysics.com/matomo/";
-            _paq.push(['setTrackerUrl', u+'matomo.php']);
-            _paq.push(['setSiteId', '2']);
-            var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
-            g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
-        })();
-    </script>
-    <!-- End Matomo Code -->
+	<!-- Matomo -->
+	<!--
+	<script>
+		var _paq = window._paq = window._paq || [];
+		/* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+		_paq.push(['trackPageView']);
+		_paq.push(['enableLinkTracking']);
+		(function() {
+			var u="//webanalytics.neonphysics.com/matomo/";
+			_paq.push(['setTrackerUrl', u+'matomo.php']);
+			_paq.push(['setSiteId', '2']);
+			var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+			g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+		})();
+	</script>
+	-->
+	<!-- End Matomo Code -->
 </head>
 <body class="auto">
-    <div class="text-group" style="text-align:center;">
-        <h1>Phased Array Visualizer</h1>
-        <div>Theme: <button class="theme-toggle">auto</button></div>
-        <br>
-    </div>
-    <div class="text-group">
-        <div class="pa-settings">
-            <div>
-                <h3>Geometry Definition</h3>
-                <select id="pa-geometry" style="width:100%"></select>
-                <div class="form-group" id="pa-x-count-div">
-                    <label for="pa-x-count">X Count</label>
-                    <input type="number" min="1" max="32" value="8" id="pa-x-count" name="pa-x-count" />
-                </div>
-                <div class="form-group" id="pa-y-count-div">
-                    <label for="pa-y-count">Y Count</label>
-                    <input type="number" min="1" max="32" value="8" id="pa-y-count" name="pa-y-count" />
-                </div>
-                <div class="form-group" id="pa-min-ring-div">
-                    <label for="pa-min-ring">Start Ring</label>
-                    <input type="number" min="0" max="32" value="0" id="pa-min-ring" name="pa-min-ring" />
-                </div>
-                <div class="form-group" id="pa-max-ring-div">
-                    <label for="pa-max-ring">Stop Ring</label>
-                    <input type="number" min="1" max="32" value="8" id="pa-max-ring" name="pa-max-ring" />
-                </div>
-                <div class="form-group" id="pa-dx-div">
-                    <label for="pa-dx">X Spacing (λ)</label>
-                    <input type="number" min="0.01" max="5.0" value="0.5" step="0.1" id="pa-dx" name="pa-dx" />
-                </div>
-                <div class="form-group" id="pa-dy-div">
-                    <label for="pa-dy">Y Spacing (λ)</label>
-                    <input type="number" min="0.01" max="5.0" value="0.5" step="0.1" id="pa-dy" name="pa-dy" />
-                </div>
-                <div class="form-group" id="pa-geo-offset-div">
-                    <label for="pa-geo-offset">Offset</label>
-                    <input type="number" min="-5" max="5.0" value="0.25" step="0.1" id="pa-geo-offset" name="pa-geo-offset" />
-                </div>
-            </div>
-            <div>
-                <h3>Steering Parameters</h3>
-                <div class="form-group" id="pa-theta-div">
-                    <label for="pa-theta">Theta (deg)</label>
-                    <input type="number" min="-90" max="90" value="0" id="pa-theta" name="pa-theta">
-                </div>
-                <div class="form-group" id="pa-phi-div">
-                    <label for="pa-phi">Phi (deg)</label>
-                    <input type="number" min="-90" max="90" value="0" id="pa-phi" name="pa-phi">
-                </div>
-            </div>
-        </div>
-        <div class="pa-update-div">
-            <button id="pa-refresh">Update</button>
-            <progress id="pa-progress" max="100" value="70"></progress>
-            <div id="pa-status">Loading...</div>
-        </div>
-    </div>
-    <div class="main-container">
-        <div class="canvas-container">
-            <div class="canvas-header"><h2>Element Phase</h2><span>&nbsp;</span></div>
-            <div class="canvas-wrapper">
-                <canvas id="pa-geometry-phase-canvas"></canvas>
-            </div>
-            <div class="canvas-footer">
-                <label for="pa-geometry-phase-colormap">Colormap</label>
-                <select id="pa-geometry-phase-colormap" name="pa-geometry-phase-colormap"></select>
-            </div>
-        </div>
-        <div class="canvas-container">
-            <div class="canvas-header"><h2>Element Attenuation</h2><span>&nbsp;</span></div>
-            <div class="canvas-wrapper">
-                <canvas id="pa-geometry-magnitude-canvas"></canvas>
-            </div>
-            <div class="canvas-footer">
-                <label for="pa-geometry-magnitude-colormap">Colormap</label>
-                <select id="pa-geometry-magnitude-colormap" name="pa-geometry-magnitude-colormap"></select>
-            </div>
-        </div>
-        <div class="canvas-container">
-            <div class="canvas-header"><h2>Radiation Pattern</h2><span id="pa-directivity-max">&nbsp;</span></div>
-            <div class="canvas-wrapper">
-                <canvas id="pa-farfield-canvas"></canvas>
-            </div>
-            <div class="canvas-footer">
-                <label for="pa-log-scale">Scale</label>
-                <input type="number" min="-100" max="0" value="-40" id="pa-log-scale" name="pa-log-scale">
-                <label for="pa-farfield-colormap">Colormap</label>
-                <select id="pa-farfield-colormap" name="pa-farfield-colormap"></select>
-                <br />
-                <label for="pa-theta-points">Theta Points</label>
-                <input type="number" min="11" max="513" value="257" id="pa-theta-points" name="pa-theta-points">
-                <label for="pa-phi-points">Phi Points</label>
-                <input type="number" min="11" max="513" value="257" id="pa-phi-points" name="pa-phi-points">
-            </div>
-        </div>
-    </div>
-    <div>
-        <h2>About</h2>
-        <p>This tool allows you to change a phased array's geometry, element spacing, and steering position.</p>
-        <p>This demo was created by <a href="http://jasonleodurbin.com" target="_blank">Jason Durbin</a>. The final implementation will be hosted on <a href='https://neonphysics.com' target='_blank'>neonphysics.com</a>.
-        <h2>Notes</h2>
-        <p>The provided directivity calculation assumes half-hemisphere radiation (+3 dB).</p>
-        <p>The farfield mesh can be made finer by changing 'Theta Points' and 'Phi Points'.</p>
-        <h2>Attributions</h2>
-        <p>Colormaps are generated to match <a href='https://matplotlib.org/stable/users/explain/colors/colormaps.html' target="_blank">matplotlib's</a>.</p>
-    </div>
+	<div class="text-group" style="text-align:center;">
+		<h1>Phased Array Visualizer</h1>
+		<p>By: <a href="http://jasonleodurbin.com" target="_blank">Jason Durbin</a> (<a href="https://www.linkedin.com/in/jasondurbin/" target="_blank">LinkedIn</a>).</p>
+		<div>Dark Mode: <button class="theme-toggle">auto</button></div>
+		<br>
+	</div>
+	<input type="text" id="pa-atten-manual" hidden />
+	<input type="text" id="pa-phase-manual" hidden />
+	<div class="text-group">
+		<div class="pa-settings">
+			<div>
+				<h3>Geometry</h3>
+				<select id="pa-geometry" style="width:100%"></select>
+				<div class="form-group" id="pa-x-count-div">
+					<label for="pa-x-count">X Count</label>
+					<input type="number" min="0" max="32" value="8" id="pa-x-count" name="pa-x-count" />
+				</div>
+				<div class="form-group" id="pa-y-count-div">
+					<label for="pa-y-count">Y Count</label>
+					<input type="number" min="0" max="32" value="8" id="pa-y-count" name="pa-y-count" />
+				</div>
+				<div class="form-group" id="pa-dx-div">
+					<label for="pa-dx">X Spacing (λ)</label>
+					<input type="number" min="0.01" max="5.0" value="0.5" step="0.1" id="pa-dx" name="pa-dx" />
+				</div>
+				<div class="form-group" id="pa-dy-div">
+					<label for="pa-dy">Y Spacing (λ)</label>
+					<input type="number" min="0.01" max="5.0" value="0.5" step="0.1" id="pa-dy" name="pa-dy" />
+				</div>
+				<div class="form-group" id="pa-geo-offset-div">
+					<label for="pa-geo-offset">Offset</label>
+					<input type="number" min="-5" max="5.0" value="0.25" step="0.1" id="pa-geo-offset" name="pa-geo-offset" />
+				</div>
+			</div>
+			<div>
+				<h3>Steering</h3>
+				<div class="form-group" id="pa-theta-div">
+					<label for="pa-theta">Theta (deg)</label>
+					<input type="number" min="-90" max="90" value="0" id="pa-theta" name="pa-theta" />
+				</div>
+				<div class="form-group" id="pa-phi-div">
+					<label for="pa-phi">Phi (deg)</label>
+					<input type="number" min="-90" max="90" value="0" id="pa-phi" name="pa-phi" />
+				</div>
+				<h3>Quantization</h3>
+				<div class="form-group" id="pa-phase-bits-div">
+					<label for="pa-phase-bits">Phase Bits</label>
+					<input type="number" min="0" max="10" value="0" step="1" id="pa-phase-bits" name="pa-phase-bits" />
+				</div>
+				<div class="form-group" id="pa-atten-bits-div">
+					<label for="pa-atten-bits">Atten. Bits</label>
+					<input type="number" min="0" max="10" value="0" step="1" id="pa-atten-bits" name="pa-atten-bits" />
+				</div>
+				<div class="form-group" id="pa-atten-lsb-div">
+					<label for="pa-atten-lsb">Atten. LSB (dB)</label>
+					<input type="number" min="0" max="5" value="0.5" step="0.25" id="pa-atten-lsb" name="pa-atten-lsb" />
+				</div>
+				<div class="form-group" style="font-size:0.7em;font-style: italic;">
+					0 bits would be no quantization.
+				</div>
+			</div>
+			<div>
+				<h3>Taper(s)</h3>
+				<div class="form-group" id="pa-taper-sampling-div">
+					<label for="pa-taper-sampling">Sampling</label>
+					<select id="pa-taper-sampling"><option>X & Y</option><option>Radial</option></select>
+				</div>
+				<div id="pa-taper-x-group"></div>
+				<div id="pa-taper-y-group"></div>
+			</div>
+		</div>
+		<div class="pa-update-div">
+			<div style="display:flex; gap: 4px;"><button id="pa-refresh">Update</button><button id="pa-reset">Reset</button></div>
+			<progress id="pa-progress" max="100" value="70"></progress>
+			<div id="pa-status">Loading...</div>
+		</div>
+	</div>
+	<div class="canvas-grid">
+		<div class="canvas-container">
+			<div class="canvas-header"><h2>Element Phase</h2><span>&nbsp;</span></div>
+			<div class="canvas-wrapper">
+				<canvas id="pa-geometry-phase-canvas" class="canvas-grid"></canvas>
+			</div>
+			<div class="canvas-footer">
+				<label for="pa-geometry-phase-colormap">Colormap</label>
+				<select id="pa-geometry-phase-colormap" name="pa-geometry-phase-colormap"></select>
+			</div>
+		</div>
+		<div class="canvas-container">
+			<div class="canvas-header"><h2>Element Attenuation</h2><span>&nbsp;</span></div>
+			<div class="canvas-wrapper">
+				<canvas id="pa-geometry-magnitude-canvas" class="canvas-grid"></canvas>
+			</div>
+			<div class="canvas-footer">
+				<label for="pa-atten-scale">Scale</label>
+				<input type="number" max="100" min="5" value="40" id="pa-atten-scale" name="pa-atten-scale">
+				<label for="pa-geometry-magnitude-colormap">Colormap</label>
+				<select id="pa-geometry-magnitude-colormap" name="pa-geometry-magnitude-colormap"></select>
+			</div>
+		</div>
+		<div class="canvas-container">
+			<div class="canvas-header"><h2>2-D Radiation Pattern</h2><span id="pa-directivity-max">&nbsp;</span></div>
+			<div class="canvas-wrapper">
+				<canvas id="pa-farfield-canvas-2d" class="canvas-grid"></canvas>
+			</div>
+			<div class="canvas-footer">
+				<label for="pa-farfield-2d-scale">Scale</label>
+				<input type="number" max="100" min="5" value="40" id="pa-farfield-2d-scale" name="pa-farfield-2d-scale">
+				<label for="pa-farfield-2d-colormap">Colormap</label>
+				<select id="pa-farfield-2d-colormap" name="pa-farfield-2d-colormap"></select>
+				<br />
+				<label for="pa-theta-points">Theta Points</label>
+				<input type="number" min="11" max="513" value="257" id="pa-theta-points" name="pa-theta-points">
+				<label for="pa-phi-points">Phi Points</label>
+				<input type="number" min="11" max="513" value="257" id="pa-phi-points" name="pa-phi-points">
+			</div>
+		</div>
+	</div>
+	<div class="canvas-full">
+		<div class="canvas-container">
+			<div class="canvas-header"><h2>1-D Pattern Cuts</h2><span>&nbsp;</span></div>
+			<div class="canvas-wrapper">
+				<canvas id="pa-farfield-canvas-1d"></canvas>
+			</div>
+			<div class="canvas-footer">
+				<div class="canvas-legend">
+					<span class="legend-item" data-cut="0" data-visible="true">Phi = 0 deg</span>
+					<span class="legend-item" data-cut="90" data-visible="true">Phi = 90 deg</span>
+					<span style='font-size:0.8em'>Click to hide/show trace.</span>
+				</div>
+				<div>
+					<label for="pa-farfield-1d-scale">Scale</label>
+					<input type="number" max="100" min="5" value="40" id="pa-farfield-1d-scale" name="pa-farfield-1d-scale">
+					<label for="pa-farfield-1d-colormap">Colormap</label>
+					<select id="pa-farfield-1d-colormap" name="pa-farfield-1d-colormap"></select>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="body-content">
+		<h2>About</h2>
+		<p>This tool allows you to change a phased array's geometry, element spacing, and steering position.</p>
+		<p>This demo was created by <a href="http://jasonleodurbin.com" target="_blank">Jason Durbin</a>. The final implementation will be hosted on <a href='https://neonphysics.com' target='_blank'>neonphysics.com</a>.
+		<h2>Information</h2>
+		<p>The provided directivity calculation assumes half-hemisphere radiation (+3 dB).</p>
+		<p>The farfield mesh can be made finer by changing 'Theta Points' and 'Phi Points'; however, this may result in a laggy performance.</p>
+		<p>Clicking (or long pressing) elements in the phase/attenuation plots allows you to manually set phase/attenuation. Additionally, the attenuation pop-up allows you to
+			disable an element.
+		</p>
+		<p>Hovering (or touching on mobile devices) the 2-D farfield mesh or the geometry plots will show the value of the plot under the cursor.</p>
+		<h2>Commercial Use</h2>
+		<p>If your company sells phased arrays, BFICs, etc. and would like to use a version of this tool on your website, contact hello@neonphysics.com.</p>
+		<p>Commercial use is otherwise prohibited.</p>
+		<h2>Attributions</h2>
+		<p>Meshing colormaps are generated to match <a href='https://matplotlib.org/stable/users/explain/colors/colormaps.html' target="_blank">matplotlib's</a>. Listed colormaps are from <a href="https://cran.r-project.org/web/packages/khroma/vignettes/tol.html" target="_blank">Paul Tol's Color Scheme</a>.</p>
+		<p>Most of the tapers were pulled from <a href='https://www.researchgate.net/publication/316281181_Catalog_of_Window_Taper_Functions_for_Sidelobe_Control' target="_blank">"Catalog of Window Taper Functions for Sidelobe Control" by Armin W. Doerry</a>.</p>
+	</div>
 </body>
 </html>

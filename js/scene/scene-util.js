@@ -206,6 +206,14 @@ export class ScenePopup{
 			d.classList = "popup-buttons";
 			return b;
 		}
+		this.add_note = (text, className) => {
+			const d = document.createElement("div");
+			d.innerHTML = text;
+			form.appendChild(d);
+			if (className !== undefined) d.classList = className;
+			return d;
+
+		}
 	}
 	element(key){
 		return this._elements[key]['element'];

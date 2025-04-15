@@ -332,6 +332,11 @@ canvas{
 .popup form .popup-buttons button{
 	margin-left: 4px;
 }
+.popup-note{
+	font-size: 0.8em;
+	font-style: italic;
+	max-width: 300px;
+}
 @media (max-width: 1024px){
 	.canvas-grid{ flex-wrap: wrap; }
 	.canvas-grid .canvas-container{ width: 45%; }

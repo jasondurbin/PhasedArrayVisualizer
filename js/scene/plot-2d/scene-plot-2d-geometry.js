@@ -171,6 +171,9 @@ export class ScenePlot2DGeometryABC extends ScenePlotABC{
 				clearAllCallback();
 				this.parent.build_queue();
 			});
+			popup.add_note(
+				'To override phase/attenuation, select "Enable Override" '
+				+ 'and enter the desired value.', 'popup-note');
 			_update();
 			popup.show_from_event(e);
 		}

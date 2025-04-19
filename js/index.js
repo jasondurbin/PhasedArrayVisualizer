@@ -1,6 +1,6 @@
 import {SceneControlPhasedArray, SceneControlFarfield} from "./index-scenes.js";
 import {ScenePlotFarfieldCuts} from "./scene/plot-1d/scene-plot-farfield-cuts.js";
-import {ScenePlotFarfield2D} from "./scene/plot-2d/scene-plot-2d-spherical-farfield.js";
+import {ScenePlotFarfield2D} from "./scene/plot-2d/scene-plot-2d-farfield.js";
 import {ScenePlot2DGeometryPhase, ScenePlot2DGeometryAtten} from "./scene/plot-2d/scene-plot-2d-geometry.js";
 import {SceneParent} from "./scene/scene-abc.js"
 import {SceneTheme} from "./scene/scene-util.js";

@@ -1,4 +1,28 @@
 /**
+ * Convert input radians to degrees.
+ *
+ * @param {Float32Array} radians
+ *
+ * @return {Float32Array}
+ * */
+export function rad2deg(radians){
+	const sc = 180/Math.PI;
+	return Float32Array.from(radians, r => r*sc);
+}
+
+/**
+ * Convert input degrees to radians.
+ *
+ * @param {Float32Array} degrees
+ *
+ * @return {Float32Array}
+ * */
+export function deg2rad(degrees){
+	const sc = Math.PI/180;
+	return Float32Array.from(degrees, r => r*sc);
+}
+
+/**
  * Create a uniformly spaced Float32Array with `num` steps.
  *
  * @param {float} start

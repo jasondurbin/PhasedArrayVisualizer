@@ -148,12 +148,13 @@ export class FarfieldSpherical extends FarfieldABC{
 	compute_directivity(){
 		let bsa = 0;
 		const step = Math.PI/(this.thetaPoints - 1)*Math.PI/(this.phiPoints - 1);
-		for (let it = 0; it < this.thetaPoints; it++) {
+		for (let it = 0; it < this.thetaPoints; it++){
 			let st = Math.abs(Math.sin(this.theta[it]))*step;
-			for (let ip = 0; ip < this.phiPoints; ip++) {
+			for (let ip = 0; ip < this.phiPoints; ip++){
 				bsa += this.farfield_total[ip][it]*st;
 			}
 		}
+		console.log("BSA", bsa);
 		return 4*Math.PI*this.maxValue/bsa;
 	}
 	constant_phi(phi){
@@ -210,15 +211,15 @@ export class FarfieldUV extends FarfieldABC{
 	compute_directivity(){
 		let bsa = 0;
 		const step = (this.u[1] - this.u[0])*(this.v[1] - this.v[0]);
-		for (let iu = 0; iu < this.uPoints; iu++) {
-			let st = step;
-			const u = this.u[iu];
-			for (let iv = 0; iv < this.vPoints; iv++) {
-				const v = this.v[iv];
-				if (Math.sqrt(u**2 + v**2) > 1) continue;
-				bsa += this.farfield_total[iv][iu]*st;
+		for (let iu = 0; iu < this.uPoints; iu++){
+			const u2 = this.u[iu]**2;
+			for (let iv = 0; iv < this.vPoints; iv++){
+				const r = Math.sqrt(u2 + this.v[iv]**2);
+				if (r > 1) continue;
+				bsa += this.farfield_total[iv][iu]*step;
 			}
 		}
+		console.log("BSA", bsa);
 		return 4*Math.PI*this.maxValue/bsa;
 	}
 	constant_u(u){
@@ -274,28 +275,24 @@ export class FarfieldLudwig3 extends FarfieldABC{
 		this.calculate_log();
 	}
 	compute_directivity(){
-		return 1.0;
 		let bsa = 0;
-		const step = (this.u[1] - this.u[0])*(this.v[1] - this.v[0]);
-		for (let iu = 0; iu < this.uPoints; iu++) {
-			let st = step;
-			const u = this.u[iu];
-			for (let iv = 0; iv < this.vPoints; iv++) {
-				const v = this.v[iv];
-				if (Math.sqrt(u**2 + v**2) > 1) continue;
-				bsa += this.farfield_total[iv][iu]*st;
+		const step = Math.PI/(this.azPoints - 1)*Math.PI/(this.elPoints - 1);
+		for (let it = 0; it < this.azPoints; it++){
+			for (let ip = 0; ip < this.elPoints; ip++){
+				bsa += this.farfield_total[ip][it]*step;
 			}
 		}
+		console.log("BSA", bsa);
 		return 4*Math.PI*this.maxValue/bsa;
 	}
 	constant_az(az){
-		const y = this.cut(az, az, this.farfield_log, 1);
+		const y = this.cut(az, this.az, this.farfield_log, 1);
 		if (y === null) return [null, null];
-		return [this.v, y]
+		return [this.el, y]
 	}
 	constant_el(el){
 		const y = this.cut(el, this.el, this.farfield_log, 0);
 		if (y === null) return [null, null];
-		return [this.u, y]
+		return [this.az, y]
 	}
 }

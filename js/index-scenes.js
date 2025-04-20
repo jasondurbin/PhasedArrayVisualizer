@@ -201,7 +201,7 @@ export class SceneControlFarfield extends SceneControl{
 
 		if (this.changed['theta-points'] || this.changed['phi-points'] || this.ff === null){
 			queue.add('Creating farfield mesh...', () => {
-				this.ff = new FarfieldLudwig3(
+				this.ff = new FarfieldUV(
 					this.find_element('theta-points').value,
 					this.find_element('phi-points').value
 				)

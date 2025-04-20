@@ -1,30 +1,30 @@
 import {ScenePlot1D} from "./scene-plot-1d.js";
 import {SceneControlFarfield} from "../../index-scenes.js"
+import {FarfieldSpherical, FarfieldUV} from "../../phasedarray/farfield.js";
 
 export class ScenePlotFarfieldCuts extends ScenePlot1D{
 	constructor(parent, canvas, cmapKey){
 		super(parent, canvas, cmapKey);
 		this.add_event_types('data-min-changed');
 		this.addEventListener('data-min-changed',() => {
-			this.create_farfield_cuts();
+			this.draw();
 		})
 		this.min = -40;
-	}
-	create_farfield_cartesian(){
-		this.reset();
-		this.set_xlabel('Theta (deg)');
-		this.set_ylabel('Relative Directivity (dB)');
-		this.set_xgrid(-90, 90, 13);
-		this.set_ygrid(this.min, 0, 11);
+		this.engine = new FarfieldCutEngineSpherical(this);
 	}
 	/**
 	* Load farfield object.
 	*
-	* @param {FarfieldSpherical} ff
+	* @param {FarfieldSpherical | FarfieldUV} ff
 	*
 	* @return {null}
 	* */
-	load_farfield(ff){ this.ff = ff; }
+	load_farfield(ff){
+		this.ff = ff;
+		if (ff.domain == 'uv') this.engine = new FarfieldCutEngineUV(this);
+		else if (ff.domain == 'ludwig3') this.engine = new FarfieldCutEngineLudwig3(this);
+		else this.engine = new FarfieldCutEngineSpherical(this);
+	}
 	/**
 	* Bind a Farfield Scene.
 	*
@@ -35,35 +35,115 @@ export class ScenePlotFarfieldCuts extends ScenePlot1D{
 	bind_farfield_scene(scene){
 		scene.addEventListener('farfield-calculation-complete', (ff) => {
 			this.load_farfield(ff);
-			this.create_farfield_cuts();
+			this.draw();
 		});
 	}
-	create_farfield_cuts(){
+	draw(){
+		this.engine.draw();
+		super.draw();
+	}
+}
+
+export class FarfieldCutEngineABC{
+	/**
+	* Create 1D plotting engine.
+	*
+	* @param {ScenePlotFarfieldCuts} parent
+	* */
+	constructor(parent){
+		this.parent = parent;
+	}
+	legend_items(){ return this.parent.legend_items(); }
+	get ff(){ return this.parent.ff; }
+}
+
+export class FarfieldCutEngineSpherical extends FarfieldCutEngineABC{
+
+	create_grid(){
+		this.parent.reset();
+		this.parent.set_xlabel('Theta (deg)');
+		this.parent.set_ylabel('Relative Directivity (dB)');
+		this.parent.set_xgrid(-90, 90, 13);
+		this.parent.set_ygrid(this.parent.min, 0, 11);
+	}
+	draw(){
 		const ff = this.ff;
-		this.create_farfield_cartesian();
+		this.create_grid();
 		if (ff === undefined || ff == null) return;
 		this.legend_items().forEach((e) => {
-			let p = e.getAttribute('data-cut');
-			const phi = ff.phi;
-			if (p === undefined) return;
-			p = Number(p)*Math.PI/180;
-
-			const mp = Float32Array.from(phi, (x) => Math.abs(x - p));
-			let mv = Infinity;
-			let mi = -1;
-
-			for (let i = 0; i < mp.length; i++){
-				if (mp[i] < mv){
-					mv = mp[i];
-					mi = i;
-				}
+			let v = e.getAttribute('data-phi');
+			if (v !== null){
+				let [x, y] = ff.constant_phi(v);
+				e.innerHTML = `phi = ${v} deg`
+				if (x !== null) this.parent.add_data(Float32Array.from(x, (iv) => iv*180/Math.PI), y, e);
 			}
-			if (mi >= 0) {
-				this.add_data(
-					ff.theta,
-					ff.farfield_log[mi],
-					e,
-				);
+		});
+	}
+}
+
+export class FarfieldCutEngineUV extends FarfieldCutEngineABC{
+
+	create_grid(){
+		this.parent.reset();
+		this.parent.set_xlabel('u/v');
+		this.parent.set_ylabel('Relative Directivity (dB)');
+		let xmin = -1, xmax = 1;
+		const ff = this.ff;
+		if (ff !== undefined){
+			xmin = ff.u[0]
+			xmax = ff.u[ff.u.length - 1]
+		}
+		this.parent.set_xgrid(xmin, xmax, 11);
+		this.parent.set_ygrid(this.parent.min, 0, 11);
+		this.parent.set_xgrid_points(1);
+	}
+	draw(){
+		const ff = this.ff;
+		this.create_grid();
+		if (ff === undefined || ff == null) return;
+		this.legend_items().forEach((e) => {
+			const iu = e.getAttribute('data-u');
+			if (iu !== null){
+				let [x, y] = ff.constant_u(iu);
+				e.innerHTML = `u = ${iu}`
+				if (x !== null) this.parent.add_data(x, y, e);
+			}
+			const iv = e.getAttribute('data-v');
+			if (iv !== null){
+				let [x, y] = ff.constant_v(iv);
+				e.innerHTML = `v = ${iv}`
+				if (x !== null) this.parent.add_data(x, y, e);
+			}
+		});
+	}
+}
+
+export class FarfieldCutEngineLudwig3 extends FarfieldCutEngineABC{
+
+	create_grid(){
+		this.parent.reset();
+		this.parent.set_xlabel('Az/El (deg)');
+		this.parent.set_ylabel('Relative Directivity (dB)');
+		this.parent.set_xgrid(-90, 90, 11);
+		this.parent.set_ygrid(this.parent.min, 0, 11);
+		this.parent.set_xgrid_points(1);
+	}
+	draw(){
+		const ff = this.ff;
+		this.create_grid();
+		if (ff === undefined || ff == null) return;
+		this.legend_items().forEach((e) => {
+			let v = e.getAttribute('data-az');
+			if (v !== null){
+				let [x, y] = ff.constant_az(v);
+				e.innerHTML = `az = ${v} deg`
+				if (x !== null) this.parent.add_data(x, y, e);
+			}
+			v = e.getAttribute('data-el');
+			if (v !== null){
+				let [x, y] = ff.constant_el(v);
+				e.innerHTML = `el = ${v} deg`
+				if (x !== null) this.parent.add_data(x, y, e);
 			}
 		});
 	}

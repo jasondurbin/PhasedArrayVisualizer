@@ -89,6 +89,22 @@ export class FarfieldABC{
 			mag: pa.vectorMag,
 		}
 	}
+	cut(xc, xs, ys, axis){
+		xc = Number(xc);
+		const mp = Float32Array.from(xs, (x) => Math.abs(x - xc));
+		let mv = Infinity;
+		let mi = -1;
+
+		for (let i = 0; i < mp.length; i++){
+			if (mp[i] < mv){
+				mv = mp[i];
+				mi = i;
+			}
+		}
+		if (mi < 0) return null;
+		if (axis == 0) return ys[mi]
+		return Float32Array.from(xs, (_, i) => ys[i][mi])
+	}
 }
 
 export class FarfieldSpherical extends FarfieldABC{
@@ -139,6 +155,16 @@ export class FarfieldSpherical extends FarfieldABC{
 			}
 		}
 		return 4*Math.PI*this.maxValue/bsa;
+	}
+	constant_phi(phi){
+		const y = this.cut(Number(phi)*Math.PI/180, this.phi, this.farfield_log, 0);
+		if (y === null) return [null, null];
+		return [this.theta, y]
+	}
+	constant_theta(theta){
+		const y = this.cut(Number(theta)*Math.PI/180, this.theta, this.farfield_log, 1);
+		if (y === null) return [null, null];
+		return [this.phi, y]
 	}
 }
 
@@ -194,5 +220,82 @@ export class FarfieldUV extends FarfieldABC{
 			}
 		}
 		return 4*Math.PI*this.maxValue/bsa;
+	}
+	constant_u(u){
+		const y = this.cut(u, this.u, this.farfield_log, 1);
+		if (y === null) return [null, null];
+		return [this.v, y]
+	}
+	constant_v(v){
+		const y = this.cut(v, this.v, this.farfield_log, 0);
+		if (y === null) return [null, null];
+		return [this.u, y]
+	}
+}
+
+export class FarfieldLudwig3 extends FarfieldABC{
+	static domain = 'ludwig3';
+	constructor(azPoints, elPoints, azMax, elMax){
+		super(azPoints, elPoints);
+		[azPoints, elPoints] = this.meshPoints;
+		if (azMax === undefined) azMax = 90;
+		if (elMax === undefined) elMax = 90;
+		this.azPoints = azPoints;
+		this.elPoints = elPoints;
+		const sc = Math.PI/180
+		this.az = linspace(-azMax*sc, azMax*sc, this.azPoints);
+		this.el = linspace(-elMax*sc, elMax*sc, this.elPoints);
+	}
+	*calculator_loop(pa){
+		const pars = this.create_parameters(pa);
+		yield pars.yield('Resetting farfield...');
+		this.reset_parameters();
+		yield pars.yield('Clearing farfield...');
+		this.clear_parameters();
+
+		const pi2 = 2*Math.PI;
+		for (let i = 0; i < pars.x.length; i++){
+			yield pars.yield('Calculating farfield re/im...');
+			for (let iv = 0; iv < this.elPoints; iv++){
+				const xxv = pars.x[i]*Math.cos(this.el[iv]);
+				const yyv = pars.y[i]*Math.sin(this.el[iv]);
+				for (let iu = 0; iu < this.azPoints; iu++){
+					const w = (xxv*Math.sin(this.az[iu]) + yyv)*pi2 + pars.pha[i];
+					this.farfield_re[iv][iu] += pars.mag[i]*Math.cos(w);
+					this.farfield_im[iv][iu] += pars.mag[i]*Math.sin(w);
+				}
+			}
+		}
+		yield pars.yield('Calculating farfield total...');
+		this.calculate_total(pars.x.length);
+		yield pars.yield('Calculating Directivity...');
+		this.dirMax = this.compute_directivity();
+		yield pars.yield('Calculating Log...');
+		this.calculate_log();
+	}
+	compute_directivity(){
+		return 1.0;
+		let bsa = 0;
+		const step = (this.u[1] - this.u[0])*(this.v[1] - this.v[0]);
+		for (let iu = 0; iu < this.uPoints; iu++) {
+			let st = step;
+			const u = this.u[iu];
+			for (let iv = 0; iv < this.vPoints; iv++) {
+				const v = this.v[iv];
+				if (Math.sqrt(u**2 + v**2) > 1) continue;
+				bsa += this.farfield_total[iv][iu]*st;
+			}
+		}
+		return 4*Math.PI*this.maxValue/bsa;
+	}
+	constant_az(az){
+		const y = this.cut(az, az, this.farfield_log, 1);
+		if (y === null) return [null, null];
+		return [this.v, y]
+	}
+	constant_el(el){
+		const y = this.cut(el, this.el, this.farfield_log, 0);
+		if (y === null) return [null, null];
+		return [this.u, y]
 	}
 }

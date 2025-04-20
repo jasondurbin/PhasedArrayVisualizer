@@ -41,6 +41,8 @@ export class ScenePlot1D extends ScenePlotABC{
 
 		this._data = []
 		this.redrawWaiting = true;
+		this.ypoints = 1;
+		this.xpoints = 0;
 	}
 	get cPadding(){ return this.padding*this.scale; }
 	get cAxesFontSize(){ return this.axesFontSize*this.scale; }
@@ -51,6 +53,8 @@ export class ScenePlot1D extends ScenePlotABC{
 	set_xlabel(label){ this.xLabel = label; }
 	set_xgrid(start, stop, count){ this.xGrid = linspace(start, stop, count); }
 	set_ygrid(start, stop, count){ this.yGrid = linspace(start, stop, count); }
+	set_xgrid_points(points){ this.xpoints = Number(points); }
+	set_ygrid_points(points){ this.ypoints = Number(points); }
 	add_data(x, y, item){
 		this.redrawWaiting = true;
 		this._data.push({
@@ -101,7 +105,6 @@ export class ScenePlot1D extends ScenePlotABC{
 		return this.cmap.cmap()(i)
 	}
 	draw_data(){
-		const sc = 180/Math.PI;
 		const ctx = this._create_context();
 		const minX = this.xGrid[0];
 		const maxX = this.xGrid[this.xGrid.length - 1];
@@ -133,12 +136,12 @@ export class ScenePlot1D extends ScenePlotABC{
 			ctx.strokeStyle = c;
 			item.style.color = c;
 			if (item.classList.contains('disabled')) continue
-			const x = Float32Array.from(e['x'], (x) => x*sc);
+			const x = e['x'];
 			const y = e['y'];
 			ctx.beginPath();
 			for (let j = 0; j < x.length; j++){
-				let ix = _x(x[j]);
-				let iy = _y(y[j]);
+				const ix = _x(x[j]);
+				const iy = _y(y[j]);
 				if (j == 0) ctx.moveTo(ix, iy);
 				else ctx.lineTo(ix, iy)
 			}
@@ -192,7 +195,7 @@ export class ScenePlot1D extends ScenePlotABC{
 				ctx.moveTo(minX, parseInt(sect[i]));
 				ctx.lineTo(maxX, parseInt(sect[i]));
 			}
-			ctx.fillText(this.yGrid[i].toString(), minX-textPadding, sect[i]);
+			ctx.fillText(this.yGrid[i].toFixed(this.ypoints).toString(), minX-textPadding, sect[i]);
 		}
 		ctx.stroke();
 		ctx.restore();
@@ -221,7 +224,7 @@ export class ScenePlot1D extends ScenePlotABC{
 				ctx.moveTo(parseInt(sect[i]), minY);
 				ctx.lineTo(parseInt(sect[i]), maxY);
 			}
-			ctx.fillText(this.xGrid[i].toString(), sect[i], minY+textPadding);
+			ctx.fillText(this.xGrid[i].toFixed(this.xpoints).toString(), sect[i], minY+textPadding);
 		}
 		ctx.stroke();
 		ctx.restore();

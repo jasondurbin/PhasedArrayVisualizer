@@ -1,5 +1,5 @@
 import {adjust_theta_phi} from "../../util.js";
-import {FarfieldSpherical, FarfieldUV} from "../../phasedarray/farfield.js"
+import {FarfieldSpherical, FarfieldUV, FarfieldLudwig3} from "../../phasedarray/farfield.js"
 import {ScenePlotABC} from "../scene-plot-abc.js"
 import {SceneControlFarfield} from "../../index-scenes.js"
 
@@ -27,7 +27,7 @@ export class ScenePlotFarfield2D extends ScenePlotABC{
 	/**
 	* Load farfield object.
 	*
-	* @param {FarfieldSpherical | FarfieldUV} ff
+	* @param {FarfieldSpherical | FarfieldUV | FarfieldLudwig3} ff
 	*
 	* @return {null}
 	* */
@@ -35,6 +35,7 @@ export class ScenePlotFarfield2D extends ScenePlotABC{
 		this.ff = ff;
 		if (ff.domain == 'spherical') this.engine = new PlotFarfield2DEngineSpherical(this);
 		else if (ff.domain == 'uv') this.engine = new PlotFarfield2DEngineUV(this);
+		else if (ff.domain == 'ludwig3') this.engine = new PlotFarfield2DEngineLudwig3(this);
 		else throw Error(`Unknown farfield domain ${ff.domain}.`)
 		this._needsRescale = true;
 	}
@@ -279,6 +280,59 @@ export class PlotFarfield2DEngineUV extends PlotFarfield2DEngineABC{
 		for (let iu = 0; iu < ff.uPoints; iu++) {
 			let u1 = iu*uStep - r;
 			for (let iv = 0; iv < ff.vPoints; iv++) {
+				let v1 = iv*vStep - r;
+				ctx.fillStyle = cmap_vals[iv][iu];
+				ctx.beginPath();
+				ctx.rect(u1-smoothing, v1-smoothing, uWidth, vWidth);
+				ctx.closePath();
+				ctx.lineWidth = 0.0;
+				ctx.fill();
+			}
+		}
+	}
+}
+
+export class PlotFarfield2DEngineLudwig3 extends PlotFarfield2DEngineABC{
+	constructor(parent, azSteps, elSteps){
+		super(parent);
+		if (azSteps === undefined) azSteps = 13;
+		if (elSteps === undefined) elSteps = 13;
+		this.elSteps = elSteps;
+		this.azSteps = azSteps;
+	}
+	draw(cmap_vals){
+		if (!this.isValid) return;
+		const canvas = this.canvas;
+		const ctx = canvas.getContext('2d');
+		const ff = this.ff;
+		ctx.reset();
+		const scale = 7000;
+		canvas.width = scale;
+		canvas.height = scale;
+		const r = Math.min(canvas.width/2, canvas.height/2);
+		const ur = (ff.az[ff.az.length-1] - ff.az[0])/2;
+		const vr = (ff.el[ff.el.length-1] - ff.el[0])/2;
+		ctx.translate(canvas.width/2, canvas.height/2);
+		ctx.scale(1.0, -1.0);
+		const smoothing = 1;
+		const uStep = (ff.az[1] - ff.az[0])*r/ur;
+		const vStep = (ff.el[1] - ff.el[0])*r/vr;
+
+		const uWidth = uStep+smoothing*2;
+		const vWidth = vStep+smoothing*2;
+
+		canvas.index_from_event = (e) => {
+			const rect = canvas.getBoundingClientRect();
+			const cu = 2*(e.clientX - rect.left)/rect.width - 1.0;
+			const cv = 1-2*(e.clientY - rect.top)/rect.height;
+			let iu = Math.round((cu + 1)*ur/(ff.az[1] - ff.az[0]));
+			let iv = Math.round((cv + 1)*vr/(ff.el[1] - ff.el[0]));
+			return [ff.az[iu]*180/Math.PI, ff.el[iv]*180/Math.PI, iu, iv];
+		};
+
+		for (let iu = 0; iu < ff.azPoints; iu++) {
+			let u1 = iu*uStep - r;
+			for (let iv = 0; iv < ff.elPoints; iv++) {
 				let v1 = iv*vStep - r;
 				ctx.fillStyle = cmap_vals[iv][iu];
 				ctx.beginPath();

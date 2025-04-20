@@ -1,6 +1,7 @@
+import {rad2deg} from "../../util.js";
 import {ScenePlot1D} from "./scene-plot-1d.js";
 import {SceneControlFarfield} from "../../index-scenes.js"
-import {FarfieldSpherical, FarfieldUV} from "../../phasedarray/farfield.js";
+import {FarfieldSpherical, FarfieldUV, FarfieldLudwig3} from "../../phasedarray/farfield.js";
 
 export class ScenePlotFarfieldCuts extends ScenePlot1D{
 	constructor(parent, canvas, cmapKey){
@@ -15,7 +16,7 @@ export class ScenePlotFarfieldCuts extends ScenePlot1D{
 	/**
 	* Load farfield object.
 	*
-	* @param {FarfieldSpherical | FarfieldUV} ff
+	* @param {FarfieldSpherical | FarfieldUV | FarfieldLudwig3} ff
 	*
 	* @return {null}
 	* */
@@ -75,7 +76,7 @@ export class FarfieldCutEngineSpherical extends FarfieldCutEngineABC{
 			if (v !== null){
 				let [x, y] = ff.constant_phi(v);
 				e.innerHTML = `phi = ${v} deg`
-				if (x !== null) this.parent.add_data(Float32Array.from(x, (iv) => iv*180/Math.PI), y, e);
+				if (x !== null) this.parent.add_data(rad2deg(x), y, e);
 			}
 		});
 	}
@@ -124,9 +125,10 @@ export class FarfieldCutEngineLudwig3 extends FarfieldCutEngineABC{
 		this.parent.reset();
 		this.parent.set_xlabel('Az/El (deg)');
 		this.parent.set_ylabel('Relative Directivity (dB)');
-		this.parent.set_xgrid(-90, 90, 11);
+		this.parent.set_xgrid(-90, 90, 13);
 		this.parent.set_ygrid(this.parent.min, 0, 11);
-		this.parent.set_xgrid_points(1);
+		this.parent.set_xgrid_points(0);
+		this.parent.set_ygrid_points(0);
 	}
 	draw(){
 		const ff = this.ff;
@@ -136,14 +138,14 @@ export class FarfieldCutEngineLudwig3 extends FarfieldCutEngineABC{
 			let v = e.getAttribute('data-az');
 			if (v !== null){
 				let [x, y] = ff.constant_az(v);
-				e.innerHTML = `az = ${v} deg`
-				if (x !== null) this.parent.add_data(x, y, e);
+				e.innerHTML = `Az = ${v} deg`
+				if (x !== null) this.parent.add_data(rad2deg(x), y, e);
 			}
 			v = e.getAttribute('data-el');
 			if (v !== null){
 				let [x, y] = ff.constant_el(v);
-				e.innerHTML = `el = ${v} deg`
-				if (x !== null) this.parent.add_data(x, y, e);
+				e.innerHTML = `El = ${v} deg`
+				if (x !== null) this.parent.add_data(rad2deg(x), y, e);
 			}
 		});
 	}

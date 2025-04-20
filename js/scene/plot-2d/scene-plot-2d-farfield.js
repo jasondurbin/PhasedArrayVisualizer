@@ -274,6 +274,9 @@ export class PlotFarfield2DEngineUV extends PlotFarfield2DEngineABC{
 			const cv = 1-2*(e.clientY - rect.top)/rect.height;
 			let iu = Math.round((cu + 1)*ur/(ff.u[1] - ff.u[0]));
 			let iv = Math.round((cv + 1)*vr/(ff.v[1] - ff.v[0]));
+
+			if (iu >= ff.u.length) iu = ff.u.length - 1;
+			if (iv >= ff.v.length) iv = ff.v.length - 1;
 			return [ff.u[iu], ff.v[iv], iu, iv];
 		};
 
@@ -327,6 +330,10 @@ export class PlotFarfield2DEngineLudwig3 extends PlotFarfield2DEngineABC{
 			const cv = 1-2*(e.clientY - rect.top)/rect.height;
 			let iu = Math.round((cu + 1)*ur/(ff.az[1] - ff.az[0]));
 			let iv = Math.round((cv + 1)*vr/(ff.el[1] - ff.el[0]));
+
+			if (iu >= ff.az.length) iu = ff.az.length - 1;
+			if (iv >= ff.el.length) iv = ff.el.length - 1;
+
 			return [ff.az[iu]*180/Math.PI, ff.el[iv]*180/Math.PI, iu, iv];
 		};
 

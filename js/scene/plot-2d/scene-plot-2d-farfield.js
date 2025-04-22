@@ -1,8 +1,9 @@
 import {adjust_theta_phi} from "../../util.js";
 import {FarfieldSpherical, FarfieldUV, FarfieldLudwig3} from "../../phasedarray/farfield.js"
 import {ScenePlotABC} from "../scene-plot-abc.js"
-import {SceneControlFarfield} from "../../index-scenes.js"
+import {SceneControlFarfieldDomain} from "../../index-scenes.js"
 
+const CANVAS_SCALER = 7000;
 export class ScenePlotFarfield2D extends ScenePlotABC{
 	constructor(parent, canvas, cmapKey){
 		let cmap = parent.create_mesh_colormap_selector(cmapKey, 'viridis');
@@ -43,7 +44,7 @@ export class ScenePlotFarfield2D extends ScenePlotABC{
 	/**
 	* Bind a Farfield Scene.
 	*
-	* @param {SceneControlFarfield} scene
+	* @param {SceneControlFarfieldDomain} scene
 	*
 	* @return {null}
 	* */
@@ -144,9 +145,8 @@ export class PlotFarfield2DEngineSpherical extends PlotFarfield2DEngineABC{
 		const ctx = canvas.getContext('2d');
 		const ff = this.ff;
 		ctx.reset();
-		const scale = 7000;
-		canvas.width = scale;
-		canvas.height = scale;
+		canvas.width = CANVAS_SCALER;
+		canvas.height = CANVAS_SCALER;
 		const thetaStep = Math.PI/(ff.thetaPoints - 1);
 		const phiStep = Math.PI/(ff.phiPoints - 1);
 		const r = Math.min(canvas.width/2, canvas.height/2);
@@ -242,8 +242,8 @@ export class PlotFarfield2DEngineSpherical extends PlotFarfield2DEngineABC{
 export class PlotFarfield2DEngineUV extends PlotFarfield2DEngineABC{
 	constructor(parent, uSteps, vSteps){
 		super(parent);
-		if (uSteps === undefined) uSteps = 7;
-		if (vSteps === undefined) vSteps = 13;
+		if (uSteps === undefined) uSteps = 11;
+		if (vSteps === undefined) vSteps = 11;
 		this.vSteps = vSteps;
 		this.uSteps = uSteps;
 	}
@@ -253,9 +253,8 @@ export class PlotFarfield2DEngineUV extends PlotFarfield2DEngineABC{
 		const ctx = canvas.getContext('2d');
 		const ff = this.ff;
 		ctx.reset();
-		const scale = 7000;
-		canvas.width = scale;
-		canvas.height = scale;
+		canvas.width = CANVAS_SCALER;
+		canvas.height = CANVAS_SCALER;
 		const r = Math.min(canvas.width/2, canvas.height/2);
 		const ur = (ff.u[ff.u.length-1] - ff.u[0])/2;
 		const vr = (ff.v[ff.u.length-1] - ff.v[0])/2;
@@ -292,6 +291,75 @@ export class PlotFarfield2DEngineUV extends PlotFarfield2DEngineABC{
 				ctx.fill();
 			}
 		}
+		this.add_u_grid(this.uSteps);
+		this.add_v_grid(this.vSteps);
+		this.add_border();
+	}
+	add_border(){
+		const canvas = this.canvas;
+		const ctx = canvas.getContext('2d');
+		const rect = canvas.getBoundingClientRect();
+		ctx.save();
+		ctx.scale(CANVAS_SCALER, CANVAS_SCALER);
+		ctx.scale(1/rect.width, 1/rect.height);
+
+		ctx.beginPath();
+		ctx.moveTo(-rect.width/2.0, -rect.height/2.0);
+		ctx.lineTo(-rect.width/2.0, rect.height/2.0);
+		ctx.lineTo(rect.width/2.0, rect.height/2.0);
+		ctx.lineTo(rect.width/2.0, -rect.height/2.0);
+		ctx.lineTo(-rect.width/2.0, -rect.height/2.0);
+		ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+		ctx.setLineDash([0]);
+		ctx.lineWidth = 1;
+		ctx.stroke();
+		ctx.closePath();
+	}
+	add_u_grid(steps){
+		const canvas = this.canvas;
+		if (steps === undefined) steps = 11;
+		const ctx = canvas.getContext('2d');
+		const rect = canvas.getBoundingClientRect();
+		ctx.save();
+		ctx.scale(CANVAS_SCALER, CANVAS_SCALER);
+		ctx.scale(1/rect.width, 1/rect.height);
+		const step = rect.width/(steps - 1);
+		// scale to bound rectangle which helps reduce aliasing and blur of grid.
+		for (let i = 1; i < (steps-1); i++){
+			ctx.beginPath();
+			let cx = (step*i-rect.width/2).toFixed(0);
+			ctx.moveTo(cx, -rect.height/2);
+			ctx.lineTo(cx, rect.height/2);
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+			ctx.lineWidth = 1;
+			ctx.setLineDash([5, 5]);
+			ctx.stroke();
+			ctx.closePath();
+		}
+		ctx.restore();
+	}
+	add_v_grid(steps){
+		const canvas = this.canvas;
+		if (steps === undefined) steps = 11;
+		const ctx = canvas.getContext('2d');
+		const rect = canvas.getBoundingClientRect();
+		ctx.save();
+		ctx.scale(CANVAS_SCALER, CANVAS_SCALER);
+		ctx.scale(1/rect.width, 1/rect.height);
+		const step = rect.height/(steps - 1);
+		// scale to bound rectangle which helps reduce aliasing and blur of grid.
+		for (let i = 1; i < (steps-1); i++){
+			ctx.beginPath();
+			let cy = (step*i-rect.height/2).toFixed(0);
+			ctx.moveTo(-rect.width/2.0, cy);
+			ctx.lineTo(rect.width/2.0, cy);
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+			ctx.lineWidth = 1;
+			ctx.setLineDash([5, 5]);
+			ctx.stroke();
+			ctx.closePath();
+		}
+		ctx.restore();
 	}
 }
 
@@ -309,9 +377,8 @@ export class PlotFarfield2DEngineLudwig3 extends PlotFarfield2DEngineABC{
 		const ctx = canvas.getContext('2d');
 		const ff = this.ff;
 		ctx.reset();
-		const scale = 7000;
-		canvas.width = scale;
-		canvas.height = scale;
+		canvas.width = CANVAS_SCALER;
+		canvas.height = CANVAS_SCALER;
 		const r = Math.min(canvas.width/2, canvas.height/2);
 		const ur = (ff.az[ff.az.length-1] - ff.az[0])/2;
 		const vr = (ff.el[ff.el.length-1] - ff.el[0])/2;
@@ -349,5 +416,74 @@ export class PlotFarfield2DEngineLudwig3 extends PlotFarfield2DEngineABC{
 				ctx.fill();
 			}
 		}
+		this.add_az_grid(this.azSteps);
+		this.add_el_grid(this.elSteps);
+		this.add_border();
+	}
+	add_border(){
+		const canvas = this.canvas;
+		const ctx = canvas.getContext('2d');
+		const rect = canvas.getBoundingClientRect();
+		ctx.save();
+		ctx.scale(CANVAS_SCALER, CANVAS_SCALER);
+		ctx.scale(1/rect.width, 1/rect.height);
+
+		ctx.beginPath();
+		ctx.moveTo(-rect.width/2.0, -rect.height/2.0);
+		ctx.lineTo(-rect.width/2.0, rect.height/2.0);
+		ctx.lineTo(rect.width/2.0, rect.height/2.0);
+		ctx.lineTo(rect.width/2.0, -rect.height/2.0);
+		ctx.lineTo(-rect.width/2.0, -rect.height/2.0);
+		ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+		ctx.setLineDash([0]);
+		ctx.lineWidth = 1;
+		ctx.stroke();
+		ctx.closePath();
+	}
+	add_az_grid(steps){
+		const canvas = this.canvas;
+		if (steps === undefined) steps = 13;
+		const ctx = canvas.getContext('2d');
+		const rect = canvas.getBoundingClientRect();
+		ctx.save();
+		ctx.scale(CANVAS_SCALER, CANVAS_SCALER);
+		ctx.scale(1/rect.width, 1/rect.height);
+		const step = rect.width/(steps - 1);
+		// scale to bound rectangle which helps reduce aliasing and blur of grid.
+		for (let i = 1; i < (steps-1); i++){
+			ctx.beginPath();
+			let cx = (step*i-rect.width/2).toFixed(0);
+			ctx.moveTo(cx, -rect.height/2);
+			ctx.lineTo(cx, rect.height/2);
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+			ctx.lineWidth = 1;
+			ctx.setLineDash([5, 5]);
+			ctx.stroke();
+			ctx.closePath();
+		}
+		ctx.restore();
+	}
+	add_el_grid(steps){
+		const canvas = this.canvas;
+		if (steps === undefined) steps = 13;
+		const ctx = canvas.getContext('2d');
+		const rect = canvas.getBoundingClientRect();
+		ctx.save();
+		ctx.scale(CANVAS_SCALER, CANVAS_SCALER);
+		ctx.scale(1/rect.width, 1/rect.height);
+		const step = rect.height/(steps - 1);
+		// scale to bound rectangle which helps reduce aliasing and blur of grid.
+		for (let i = 1; i < (steps-1); i++){
+			ctx.beginPath();
+			let cy = (step*i-rect.height/2).toFixed(0);
+			ctx.moveTo(-rect.width/2.0, cy);
+			ctx.lineTo(rect.width/2.0, cy);
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+			ctx.lineWidth = 1;
+			ctx.setLineDash([5, 5]);
+			ctx.stroke();
+			ctx.closePath();
+		}
+		ctx.restore();
 	}
 }

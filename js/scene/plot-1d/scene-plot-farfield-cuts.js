@@ -1,6 +1,6 @@
 import {rad2deg} from "../../util.js";
 import {ScenePlot1D} from "./scene-plot-1d.js";
-import {SceneControlFarfield} from "../../index-scenes.js"
+import {SceneControlFarfieldDomain} from "../../index-scenes.js"
 import {FarfieldSpherical, FarfieldUV, FarfieldLudwig3} from "../../phasedarray/farfield.js";
 
 export class ScenePlotFarfieldCuts extends ScenePlot1D{
@@ -29,7 +29,7 @@ export class ScenePlotFarfieldCuts extends ScenePlot1D{
 	/**
 	* Bind a Farfield Scene.
 	*
-	* @param {SceneControlFarfield} scene
+	* @param {SceneControlFarfieldDomain} scene
 	*
 	* @return {null}
 	* */

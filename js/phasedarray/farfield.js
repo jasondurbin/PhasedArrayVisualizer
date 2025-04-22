@@ -1,6 +1,12 @@
 import {linspace} from "../util.js";
 
 export class FarfieldABC{
+	static args = ['farfield-ax1-points', 'farfield-ax2-points'];
+	static controls = {
+		'farfield-domain': {'title': null},
+		'farfield-ax1-points': {'title': "Theta Points", 'type': "int", 'default': 257, 'min': 1},
+		'farfield-ax2-points': {'title': "Phi Points", 'type': "int", 'default': 257, 'min': 1}
+	};
 	constructor(ax1Points, ax2Points){
 		ax1Points = Number(ax1Points)
 		ax2Points = Number(ax2Points)
@@ -108,6 +114,7 @@ export class FarfieldABC{
 }
 
 export class FarfieldSpherical extends FarfieldABC{
+	static title = 'Spherical';
 	static domain = 'spherical';
 	constructor(thetaPoints, phiPoints){
 		super(thetaPoints, phiPoints);
@@ -118,15 +125,15 @@ export class FarfieldSpherical extends FarfieldABC{
 		this.theta = linspace(-Math.PI/2, Math.PI/2, this.thetaPoints);
 		this.phi = linspace(-Math.PI/2, Math.PI/2, this.phiPoints);
 	}
-	*calculator_loop(pa){
+	*calculator_loop(pa, skipLog){
 		const pars = this.create_parameters(pa);
-		yield pars.yield('Resetting farfield...');
+		yield pars.yield('Resetting spherical...');
 		this.reset_parameters();
 		let sinThetaPi = Float32Array.from({length: this.thetaPoints}, (_, i) => 2*Math.PI*Math.sin(this.theta[i]));
-		yield pars.yield('Clearing farfield...');
+		yield pars.yield('Clearing spherical...');
 		this.clear_parameters();
 		for (let i = 0; i < pars.x.length; i++){
-			yield pars.yield('Calculating farfield re/im...');
+			yield pars.yield('Calculating spherical re/im...');
 			for (let ip = 0; ip < this.phiPoints; ip++){
 				const xxv = pars.x[i]*Math.cos(this.phi[ip]);
 				const yyv = pars.y[i]*Math.sin(this.phi[ip]);
@@ -138,12 +145,14 @@ export class FarfieldSpherical extends FarfieldABC{
 				}
 			}
 		}
-		yield pars.yield('Calculating farfield total...');
+		yield pars.yield('Calculating spherical total...');
 		this.calculate_total(pars.x.length);
-		yield pars.yield('Calculating Directivity...');
+		yield pars.yield('Calculating spherical directivity...');
 		this.dirMax = this.compute_directivity();
-		yield pars.yield('Calculating Log...');
-		this.calculate_log();
+		if (skipLog === undefined || skipLog === false){
+			yield pars.yield('Calculating spherical log...');
+			this.calculate_log();
+		}
 	}
 	compute_directivity(){
 		let bsa = 0;
@@ -154,7 +163,6 @@ export class FarfieldSpherical extends FarfieldABC{
 				bsa += this.farfield_total[ip][it]*st;
 			}
 		}
-		console.log("BSA", bsa);
 		return 4*Math.PI*this.maxValue/bsa;
 	}
 	constant_phi(phi){
@@ -170,7 +178,13 @@ export class FarfieldSpherical extends FarfieldABC{
 }
 
 export class FarfieldUV extends FarfieldABC{
+	static title = 'UV';
 	static domain = 'uv';
+	static controls = {
+		'farfield-domain': {'title': null},
+		'farfield-ax1-points': {'title': "U Points", 'type': "int", 'default': 257, 'min': 1},
+		'farfield-ax2-points': {'title': "V Points", 'type': "int", 'default': 257, 'min': 1}
+	};
 	constructor(uPoints, vPoints, uMax, vMax){
 		super(uPoints, vPoints);
 		[uPoints, vPoints] = this.meshPoints;
@@ -183,14 +197,14 @@ export class FarfieldUV extends FarfieldABC{
 	}
 	*calculator_loop(pa){
 		const pars = this.create_parameters(pa);
-		yield pars.yield('Resetting farfield...');
+		yield pars.yield('Resetting UV...');
 		this.reset_parameters();
-		yield pars.yield('Clearing farfield...');
+		yield pars.yield('Clearing UV...');
 		this.clear_parameters();
 
 		const pi2 = 2*Math.PI;
 		for (let i = 0; i < pars.x.length; i++){
-			yield pars.yield('Calculating farfield re/im...');
+			yield pars.yield('Calculating UV re/im...');
 			for (let iv = 0; iv < this.vPoints; iv++){
 				const xxv = pars.x[i];
 				const yyv = pars.y[i]*this.v[iv];
@@ -201,27 +215,21 @@ export class FarfieldUV extends FarfieldABC{
 				}
 			}
 		}
-		yield pars.yield('Calculating farfield total...');
+		yield pars.yield('Calculating UV total...');
 		this.calculate_total(pars.x.length);
-		yield pars.yield('Calculating Directivity...');
-		this.dirMax = this.compute_directivity();
-		yield pars.yield('Calculating Log...');
+
+		const sph = new FarfieldSpherical(this.uPoints, this.vPoints);
+		const lpi = sph.calculator_loop(pa);
+		while (1){
+			const n = lpi.next();
+			if (n['done']) break;
+			yield n['value'];
+		}
+		this.dirMax = sph.dirMax;
+		yield pars.yield('Calculating UV log...');
 		this.calculate_log();
 	}
-	compute_directivity(){
-		let bsa = 0;
-		const step = (this.u[1] - this.u[0])*(this.v[1] - this.v[0]);
-		for (let iu = 0; iu < this.uPoints; iu++){
-			const u2 = this.u[iu]**2;
-			for (let iv = 0; iv < this.vPoints; iv++){
-				const r = Math.sqrt(u2 + this.v[iv]**2);
-				if (r > 1) continue;
-				bsa += this.farfield_total[iv][iu]*step;
-			}
-		}
-		console.log("BSA", bsa);
-		return 4*Math.PI*this.maxValue/bsa;
-	}
+	compute_directivity(){ throw Error("Cannot calculate directivity with U-V coordinates."); }
 	constant_u(u){
 		const y = this.cut(u, this.u, this.farfield_log, 1);
 		if (y === null) return [null, null];
@@ -236,6 +244,12 @@ export class FarfieldUV extends FarfieldABC{
 
 export class FarfieldLudwig3 extends FarfieldABC{
 	static domain = 'ludwig3';
+	static title = 'Ludwig3';
+	static controls = {
+		'farfield-domain': {'title': null},
+		'farfield-ax1-points': {'title': "Az Points", 'type': "int", 'default': 257, 'min': 1},
+		'farfield-ax2-points': {'title': "El Points", 'type': "int", 'default': 257, 'min': 1}
+	};
 	constructor(azPoints, elPoints, azMax, elMax){
 		super(azPoints, elPoints);
 		[azPoints, elPoints] = this.meshPoints;
@@ -249,14 +263,14 @@ export class FarfieldLudwig3 extends FarfieldABC{
 	}
 	*calculator_loop(pa){
 		const pars = this.create_parameters(pa);
-		yield pars.yield('Resetting farfield...');
+		yield pars.yield('Resetting Ludwig3...');
 		this.reset_parameters();
-		yield pars.yield('Clearing farfield...');
+		yield pars.yield('Clearing Ludwig3...');
 		this.clear_parameters();
 
 		const pi2 = 2*Math.PI;
 		for (let i = 0; i < pars.x.length; i++){
-			yield pars.yield('Calculating farfield re/im...');
+			yield pars.yield('Calculating Ludwig3 re/im...');
 			for (let iv = 0; iv < this.elPoints; iv++){
 				const xxv = pars.x[i]*Math.cos(this.el[iv]);
 				const yyv = pars.y[i]*Math.sin(this.el[iv]);
@@ -267,24 +281,20 @@ export class FarfieldLudwig3 extends FarfieldABC{
 				}
 			}
 		}
-		yield pars.yield('Calculating farfield total...');
+		yield pars.yield('Calculating Ludwig3 total...');
 		this.calculate_total(pars.x.length);
-		yield pars.yield('Calculating Directivity...');
-		this.dirMax = this.compute_directivity();
-		yield pars.yield('Calculating Log...');
+		const sph = new FarfieldSpherical(this.azPoints, this.elPoints);
+		const lpi = sph.calculator_loop(pa);
+		while (1){
+			const n = lpi.next();
+			if (n['done']) break;
+			yield n['value'];
+		}
+		this.dirMax = sph.dirMax;
+		yield pars.yield('Calculating Ludwig3 log...');
 		this.calculate_log();
 	}
-	compute_directivity(){
-		let bsa = 0;
-		const step = Math.PI/(this.azPoints - 1)*Math.PI/(this.elPoints - 1);
-		for (let it = 0; it < this.azPoints; it++){
-			for (let ip = 0; ip < this.elPoints; ip++){
-				bsa += this.farfield_total[ip][it]*step;
-			}
-		}
-		console.log("BSA", bsa);
-		return 4*Math.PI*this.maxValue/bsa;
-	}
+	compute_directivity(){ throw Error("Cannot calculate directivity with Ludwig3 coordinates."); }
 	constant_az(az){
 		const y = this.cut(az, this.az, this.farfield_log, 1);
 		if (y === null) return [null, null];
@@ -296,3 +306,9 @@ export class FarfieldLudwig3 extends FarfieldABC{
 		return [this.az, y]
 	}
 }
+
+export const FarfieldDomains = [
+	FarfieldSpherical,
+	FarfieldUV,
+	FarfieldLudwig3,
+]

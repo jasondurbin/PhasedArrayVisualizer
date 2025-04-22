@@ -1,3 +1,5 @@
+import {SceneElement} from "./scene-abc.js"
+
 export class SceneTheme{
 	constructor(){
 		const ttg = document.querySelector('.theme-toggle');
@@ -98,16 +100,24 @@ export class SceneURL{
 		this._needsUpdate = true;
 	}
 	reset_element(param, ele){
-		let v = ele.getAttribute('data-default-value');
+		if (!element_saveable(ele)) return;
+		const v = ele.getAttribute('data-default-value');
 		if (element_setter(ele, v)) ele.dispatchEvent(new Event('change'));
 		this.delete(param);
 	}
+	/**
+	* Bind an element to URL parameter watchlist.
+	*
+	* @param {String} param Parameter/element name
+	* @param {HTMLElement} ele HTML DOM element.
+	* */
 	bind_element(param, ele){
+		if (!element_saveable(ele)) return;
 		ele.addEventListener('change', () => {
-			this.set_param(param, ele.value);
-			if (ele.value === "") this.delete(param);
+			this.check_element(param, ele);
 		});
 		let dv = ele.getAttribute('data-default-value');
+
 		if (dv === null){
 			dv = ele.value;
 			ele.setAttribute('data-default-value', dv);
@@ -116,6 +126,20 @@ export class SceneURL{
 		if (v === undefined || v === null) return;
 		if (element_setter(ele, v)) ele.dispatchEvent(new Event('change'));
 	}
+	/**
+	* Check if element needs to be added to URL.
+	*
+	* @param {String} param Parameter/element name
+	* @param {HTMLElement} ele HTML DOM element.
+	* */
+	check_element(param, ele){
+		if (ele.value === "" || ele.getAttribute('data-default-value') == ele.value) this.delete(param);
+		else this.set_param(param, ele.value);
+	}
+}
+
+export function element_saveable(ele){
+	return ['SELECT', 'OPTION', 'INPUT'].includes(ele.nodeName)
 }
 
 export function element_setter(ele, value){

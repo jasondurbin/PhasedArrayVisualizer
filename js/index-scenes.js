@@ -1,14 +1,14 @@
-import {SceneControl, SceneControlWithSelector, SceneParent} from "./scene/scene-abc.js";
+import {SceneControl, SceneControlWithSelector, SceneControlWithSelectorAutoBuild, SceneParent} from "./scene/scene-abc.js";
 import {SceneQueue} from "./scene/scene-queue.js";
 import {Geometries} from "./phasedarray/geometry.js";
 import {PhasedArray} from "./phasedarray/phasedarray.js";
-import {FarfieldSpherical, FarfieldUV, FarfieldLudwig3} from "./phasedarray/farfield.js"
+import {FarfieldDomains} from "./phasedarray/farfield.js"
 import {Tapers} from "./phasedarray/tapers.js"
 import {normalize} from "./util.js";
 
-export class SceneControlGeometry extends SceneControlWithSelector{
+export class SceneControlGeometry extends SceneControlWithSelectorAutoBuild{
 	constructor(parent){
-		super(parent, 'geometry', Geometries);
+		super(parent, 'geometry', Geometries, parent.find_element('geometry-controls'));
 		this.activeGeometry = null;
 	}
 	control_changed(key){
@@ -119,8 +119,8 @@ export class SceneControlPhasedArray extends SceneControl{
 	update_hidden_controls(){
 		const mconfig = {};
 		const pconfig = {};
-		const mele = this.elements['atten-manual'];
-		const pele = this.elements['phase-manual'];
+		const mele = this.find_element('atten-manual');
+		const pele = this.find_element('phase-manual');
 		const pa = this.pa;
 		for (let i = 0; i < pa.size; i++){
 			if (!pa.vectorMagIsManual[i]) continue;
@@ -139,8 +139,8 @@ export class SceneControlPhasedArray extends SceneControl{
 	}
 	load_hidden_controls(){
 		const pa = this.pa;
-		const mele = this.elements['atten-manual'];
-		const pele = this.elements['phase-manual'];
+		const mele = this.find_element('atten-manual');
+		const pele = this.find_element('phase-manual');
 		try{
 			if (mele.value != ""){
 				const mconfig = JSON.parse(mele.value);
@@ -165,72 +165,9 @@ export class SceneControlPhasedArray extends SceneControl{
 	}
 }
 
-export class SceneControlFarfield extends SceneControl{
-	constructor(parent){
-		super(parent, ['theta-points', 'phi-points']);
-		this.ff = null;
-		this.validMaxMonitors = new Set(['directivity']);
-		this.maxMonitors = {};
-		this.add_event_types('farfield-changed', 'farfield-calculation-complete');
-	}
-	/**
-	* Add callable functions to monitor values.
-	*
-	* @param {string} key Examples: directivity
-	* @param {function(Number):null} callback
-	*
-	* @return {null}
-	* */
-	add_max_monitor(key, callback){
-		if (!(this.validMaxMonitors.has(key))){
-			throw Error(`Invalid monitor ${key}. Expected: ${Array.from(this.validMaxMonitors).join(', ')}`)
-		}
-		if (!(key in this.maxMonitors)) this.maxMonitors[key] = [];
-		this.maxMonitors[key].push(callback);
-	}
-	/**
-	* Add callable objects to queue.
-	*
-	* @param {SceneQueue} queue
-	*
-	* @return {null}
-	* */
-	add_to_queue(queue){
-		const arrayControl = this.parent.arrayControl;
-		let needsRecalc = arrayControl.farfieldNeedsCalculation;
-
-		if (this.changed['theta-points'] || this.changed['phi-points'] || this.ff === null){
-			queue.add('Creating farfield mesh...', () => {
-				this.ff = new FarfieldUV(
-					this.find_element('theta-points').value,
-					this.find_element('phi-points').value
-				)
-				this.trigger_event('farfield-changed', this.ff);
-				this.clear_changed('theta-points', 'phi-points');
-			});
-			needsRecalc = true;
-		}
-		if (needsRecalc){
-			queue.add_iterator('Calculating farfield...', () => {
-				return this.ff.calculator_loop(arrayControl.pa)
-			});
-			queue.add("Notifying farfield change...", () => {
-				this.trigger_event('farfield-calculation-complete', this.ff);
-				for (const [key, value] of Object.entries(this.maxMonitors)){
-					let val;
-					if (key == 'directivity') val = this.ff.dirMax;
-					else throw Error(`Unknown max key ${key}.`)
-					value.forEach((e) => e(val));
-				}
-			})
-		}
-		this.needsRedraw = needsRecalc;
-	}
-}
-
-export class SceneControlTaper extends SceneControlWithSelector{
-	constructor(parent, key){
-		super(parent, 'taper', Tapers, key);
+export class SceneControlTaper extends SceneControlWithSelectorAutoBuild{
+	constructor(parent, key, htmlElement){
+		super(parent, 'taper', Tapers, htmlElement, key);
 		this.activeTaper = null;
 	}
 	control_changed(key){
@@ -320,8 +257,8 @@ export class SceneControlTaper extends SceneControlWithSelector{
 export class SceneControlAllTapers extends SceneControl{
 	constructor(parent){
 		super(parent, ['taper-sampling']);
-		this.xControl = SceneControlTaper.build(parent, 'x');
-		this.yControl = SceneControlTaper.build(parent, 'y');
+		this.xControl = new SceneControlTaper(parent, 'x', parent.find_element('taper-x-group'));
+		this.yControl = new SceneControlTaper(parent, 'y', parent.find_element('taper-y-group'));
 	}
 	get calculationWaiting(){
 		return (
@@ -339,7 +276,7 @@ export class SceneControlAllTapers extends SceneControl{
 			eleX.querySelector("label").innerHTML = "R-Taper";
 		}
 		else{
-			eleY.style.display = 'block'
+			eleY.style.display = 'block';
 			eleX.querySelector("label").innerHTML = "X-Taper";
 		}
 	}
@@ -396,5 +333,64 @@ export class SceneControlAllTapers extends SceneControl{
 				src.pa.set_magnitude_weight(t.calculate_weights(geor))
 			});
 		}
+	}
+}
+
+export class SceneControlFarfieldDomain extends SceneControlWithSelector{
+	constructor(parent){
+		super(parent, 'farfield-domain', FarfieldDomains);
+		this.ff = null;
+		this.validMaxMonitors = new Set(['directivity']);
+		this.maxMonitors = {};
+		this.add_event_types('farfield-changed', 'farfield-calculation-complete');
+	}
+	/**
+	* Add callable functions to monitor values.
+	*
+	* @param {string} key Examples: directivity
+	* @param {function(Number):null} callback
+	*
+	* @return {null}
+	* */
+	add_max_monitor(key, callback){
+		if (!(this.validMaxMonitors.has(key))){
+			throw Error(`Invalid monitor ${key}. Expected: ${Array.from(this.validMaxMonitors).join(', ')}`)
+		}
+		if (!(key in this.maxMonitors)) this.maxMonitors[key] = [];
+		this.maxMonitors[key].push(callback);
+	}
+	/**
+	* Add callable objects to queue.
+	*
+	* @param {SceneQueue} queue
+	*
+	* @return {null}
+	* */
+	add_to_queue(queue){
+		const arrayControl = this.parent.arrayControl;
+		let needsRecalc = arrayControl.farfieldNeedsCalculation;
+
+		if (this.changed['farfield-ax1-points'] || this.changed['farfield-ax2-points'] || this.ff === null){
+			queue.add('Creating farfield mesh...', () => {
+				this.ff = this.build_active_object();
+				this.trigger_event('farfield-changed', this.ff);
+			});
+			needsRecalc = true;
+		}
+		if (needsRecalc){
+			queue.add_iterator('Calculating farfield...', () => {
+				return this.ff.calculator_loop(arrayControl.pa)
+			});
+			queue.add("Notifying farfield change...", () => {
+				this.trigger_event('farfield-calculation-complete', this.ff);
+				for (const [key, value] of Object.entries(this.maxMonitors)){
+					let val;
+					if (key == 'directivity') val = this.ff.dirMax;
+					else throw Error(`Unknown max key ${key}.`)
+					value.forEach((e) => e(val));
+				}
+			})
+		}
+		this.needsRedraw = needsRecalc;
 	}
 }

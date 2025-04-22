@@ -45,29 +45,8 @@
 	<input type="text" id="pa-phase-manual" hidden />
 	<div class="text-group">
 		<div class="pa-settings">
-			<div>
+			<div id="pa-geometry-controls">
 				<h3>Geometry</h3>
-				<select id="pa-geometry" style="width:100%"></select>
-				<div class="form-group" id="pa-x-count-div">
-					<label for="pa-x-count">X Count</label>
-					<input type="number" min="0" max="32" value="8" id="pa-x-count" name="pa-x-count" />
-				</div>
-				<div class="form-group" id="pa-y-count-div">
-					<label for="pa-y-count">Y Count</label>
-					<input type="number" min="0" max="32" value="8" id="pa-y-count" name="pa-y-count" />
-				</div>
-				<div class="form-group" id="pa-dx-div">
-					<label for="pa-dx">X Spacing (λ)</label>
-					<input type="number" min="0.01" max="5.0" value="0.5" step="0.1" id="pa-dx" name="pa-dx" />
-				</div>
-				<div class="form-group" id="pa-dy-div">
-					<label for="pa-dy">Y Spacing (λ)</label>
-					<input type="number" min="0.01" max="5.0" value="0.5" step="0.1" id="pa-dy" name="pa-dy" />
-				</div>
-				<div class="form-group" id="pa-geo-offset-div">
-					<label for="pa-geo-offset">Offset</label>
-					<input type="number" min="-5" max="5.0" value="0.25" step="0.1" id="pa-geo-offset" name="pa-geo-offset" />
-				</div>
 			</div>
 			<div>
 				<h3>Steering</h3>
@@ -102,12 +81,12 @@
 					<label for="pa-taper-sampling">Sampling</label>
 					<select id="pa-taper-sampling"><option>X & Y</option><option>Radial</option></select>
 				</div>
-				<div id="pa-taper-x-group"></div>
-				<div id="pa-taper-y-group"></div>
+				<div id="pa-taper-x-group" style="margin: 5px 0px;"></div>
+				<div id="pa-taper-y-group" style="margin: 5px 0px;"></div>
 			</div>
 		</div>
 		<div class="pa-update-div">
-			<div style="display:flex; gap: 4px;"><button id="pa-refresh">Update</button><button id="pa-reset">Reset</button></div>
+			<div style="display:flex; gap: 4px; justify-content: center;"><button id="pa-refresh">Update</button><button id="pa-reset">Reset</button></div>
 			<progress id="pa-progress" max="100" value="70"></progress>
 			<div id="pa-status">Loading...</div>
 		</div>
@@ -118,9 +97,11 @@
 			<div class="canvas-wrapper">
 				<canvas id="pa-geometry-phase-canvas" class="canvas-grid"></canvas>
 			</div>
-			<div class="canvas-footer">
-				<label for="pa-geometry-phase-colormap">Colormap</label>
-				<select id="pa-geometry-phase-colormap" name="pa-geometry-phase-colormap"></select>
+			<div class="canvas-footer footer-group">
+				<div>
+					<label for="pa-geometry-phase-colormap">Colormap</label>
+					<select id="pa-geometry-phase-colormap" name="pa-geometry-phase-colormap"></select>
+				</div>
 			</div>
 		</div>
 		<div class="canvas-container">
@@ -128,11 +109,15 @@
 			<div class="canvas-wrapper">
 				<canvas id="pa-geometry-magnitude-canvas" class="canvas-grid"></canvas>
 			</div>
-			<div class="canvas-footer">
-				<label for="pa-atten-scale">Scale</label>
-				<input type="number" max="100" min="5" value="40" id="pa-atten-scale" name="pa-atten-scale">
-				<label for="pa-geometry-magnitude-colormap">Colormap</label>
-				<select id="pa-geometry-magnitude-colormap" name="pa-geometry-magnitude-colormap"></select>
+			<div class="canvas-footer footer-group">
+				<div>
+					<label for="pa-atten-scale">Scale</label>
+					<input type="number" max="100" min="5" value="40" id="pa-atten-scale" name="pa-atten-scale">
+				</div>
+				<div>
+					<label for="pa-geometry-magnitude-colormap">Colormap</label>
+					<select id="pa-geometry-magnitude-colormap" name="pa-geometry-magnitude-colormap"></select>
+				</div>
 			</div>
 		</div>
 		<div class="canvas-container">
@@ -141,15 +126,30 @@
 				<canvas id="pa-farfield-canvas-2d" class="canvas-grid"></canvas>
 			</div>
 			<div class="canvas-footer">
-				<label for="pa-farfield-2d-scale">Scale</label>
-				<input type="number" max="100" min="5" value="40" id="pa-farfield-2d-scale" name="pa-farfield-2d-scale">
-				<label for="pa-farfield-2d-colormap">Colormap</label>
-				<select id="pa-farfield-2d-colormap" name="pa-farfield-2d-colormap"></select>
-				<br />
-				<label for="pa-theta-points">Theta Points</label>
-				<input type="number" min="11" max="513" value="257" id="pa-theta-points" name="pa-theta-points">
-				<label for="pa-phi-points">Phi Points</label>
-				<input type="number" min="11" max="513" value="257" id="pa-phi-points" name="pa-phi-points">
+				<div class="footer-group">
+					<div>
+						<label for="pa-farfield-domain">Domain</label>
+						<select id="pa-farfield-domain"></select>
+					</div>
+					<div>
+						<label for="pa-farfield-2d-scale">Scale</label>
+						<input type="number" max="100" min="5" value="40" id="pa-farfield-2d-scale" name="pa-farfield-2d-scale">
+					</div>
+					<div>
+						<label for="pa-farfield-2d-colormap">Colormap</label>
+						<select id="pa-farfield-2d-colormap" name="pa-farfield-2d-colormap"></select>
+					</div>
+				</div>
+				<div class="footer-group">
+					<div>
+						<label for="pa-farfield-ax1-points">Theta Points</label>
+						<input type="number" min="11" max="513" value="257" id="pa-farfield-ax1-points" name="pa-farfield-ax1-points">
+					</div>
+					<div>
+						<label for="pa-farfield-ax2-points">Phi Points</label>
+						<input type="number" min="11" max="513" value="257" id="pa-farfield-ax2-points" name="pa-farfield-ax2-points">
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>

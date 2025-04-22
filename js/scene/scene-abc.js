@@ -4,6 +4,66 @@ import {ListedColormapControl} from "../cmap/cmap-listed.js";
 import {SceneQueue} from "./scene-queue.js";
 import {ScenePopup, FindSceneURL} from "./scene-util.js";
 
+export class SceneElement{
+	constructor(key, ele){
+		this.key = key;
+		this.ele = ele;
+		this.active = false;
+
+		this.label = document.querySelector("label[for='" + ele.id + "']");
+		this.div = document.querySelector("#" + ele.id + "-div");
+
+		this.last = this.value;
+		ele.addEventListener('change', () => {
+			if (this.active) this.last = this.value;
+		})
+		this.cDict = {};
+	}
+	get value(){ return this.ele.value; }
+	set_value(value){ this.ele.value = value; }
+	load_from(cDict){
+		this.cDict = cDict;
+		if ('default' in cDict){
+			this.last = cDict['default'];
+			this.ele.setAttribute('data-default-value', cDict['default']);
+		}
+	}
+	reset(){
+		if (this.active) return;
+		if ('default' in this.cDict){
+			const dv = this.cDict['default'];
+			this.last = dv;
+			this.ele.value = dv;
+		}
+	}
+	activate(){
+		this.active = true;
+		let dv = null;
+		if ('default' in this.cDict) dv = this.cDict['default'];
+		this.ele.setAttribute('data-default-value', dv);
+
+		['min', 'max', 'step'].forEach((k) => {
+			if (k in this.cDict) this.ele.setAttribute(k, this.cDict[k]);
+			else this.ele.removeAttribute(k);
+		})
+
+		if (this.div !== null) this.div.style.display = "flex";
+		if (this.label === null) return;
+		const title = this.cDict['title'];
+		if (title === undefined || title === null) return;
+		this.label.innerHTML = title;
+		this.ele.value = this.last;
+	}
+	deactivate(){
+		this.active = false;
+		if (this.div !== null) this.div.style.display = "none";
+	}
+	set_active(active){
+		if (active) this.activate();
+		else this.deactivate();
+	}
+}
+
 export class SceneObjectABC{
 	constructor(prepend, controls){
 		this.prepend = prepend;
@@ -13,7 +73,7 @@ export class SceneObjectABC{
 		this.find_elements(controls);
 		this.listeners = {};
 		this.controls = controls;
-		this.eventTypes = new Set(['control-changed']);
+		this.eventTypes = new Set(['control-changed', 'reset']);
 		this.queue = null;
 		controls.forEach((k) => {
 			this.changed[k] = true;
@@ -119,7 +179,9 @@ export class SceneObjectABC{
 		return children;
 	}
 	children(){ return this._children; }
+	reset_all(){ this.trigger_event('reset'); }
 }
+
 export class SceneParent extends SceneObjectABC{
 	/**
 	* A control with name `key` has changed.
@@ -142,16 +204,16 @@ export class SceneParent extends SceneObjectABC{
 	_iterate_children_controls(caller){
 		const cons = new Set([]);
 		this.all_children().forEach((c) => {
-			for (const [k, ele] of Object.entries(c.elements)){
-				if (ele in cons) continue;
-				caller(k, ele);
-				cons.add(ele);
-			}
 			for (const [k, cmap] of Object.entries(c.colormap)){
 				const ele = cmap.selector;
-				if (ele in cons) continue;
+				if (cons.has(k)) continue;
 				caller(k, ele);
-				cons.add(ele);
+				cons.add(k);
+			}
+			for (const [k, ele] of Object.entries(c.elements)){
+				if (cons.has(k)) continue;
+				caller(k, ele);
+				cons.add(k);
 			}
 		});
 	}
@@ -160,6 +222,7 @@ export class SceneParent extends SceneObjectABC{
 		this._iterate_children_controls((k, ele) => {
 			url.reset_element(k, ele);
 		});
+		this.reset_all();
 	}
 }
 
@@ -176,6 +239,7 @@ export class SceneControl extends SceneObjectABC{
 		super(parent.prepend, controls);
 		this.parent = parent;
 		parent.add_child(this);
+		parent.addEventListener('reset', () => {this.reset_all()})
 	}
 	/**
 	* Add callable objects to queue.
@@ -191,8 +255,7 @@ export class SceneControlWithSelector extends SceneControl{
 	constructor(parent, primaryKey, classes, prepend){
 		let keys = new Set([primaryKey]);
 		classes.forEach((kls) => {
-			let newKeys = new Set(Object.keys(kls.controls));
-			keys = keys.union(newKeys);
+			keys = keys.union(new Set(Object.keys(kls.controls)));
 		});
 		let wrap_prepend = (vals) => vals;
 		let unwrap_prepend = (vals) => vals;
@@ -209,6 +272,7 @@ export class SceneControlWithSelector extends SceneControl{
 			primaryKey = prepend + "-" + primaryKey;
 		}
 		super(parent, keys);
+		this.sceneElements = {}
 		this.wrap_prepend = wrap_prepend;
 		this.unwrap_prepend = unwrap_prepend;
 		this.wrap_prepend_s = wrap_prepend_s;
@@ -220,17 +284,30 @@ export class SceneControlWithSelector extends SceneControl{
 			ele.value = x.title;
 			ele.innerHTML = x.title;
 			this.primarySelector.appendChild(ele);
-			x.controls = JSON.parse(JSON.stringify(x.controls));
+			for (const [k, v] of Object.entries(x.controls)){
+				const kk = wrap_prepend_s(k);
+				if (kk in this.sceneElements) continue;
+				if (kk == primaryKey) continue;
+				const con = new SceneElement(kk, this.find_element(kk));
+				con.load_from(v)
+				this.sceneElements[kk] = con;
+			}
 		})
+		this.primaryKey = primaryKey;
 		this.primarySelector.addEventListener('change', () => {this.show_controls();});
 		this.show_controls();
+	}
+	remember_value(cons, key, value, override){
+		if (!(key in cons)) return;
+		let skey = key;
+		if ('store-key' in cons[key]) skey = cons[key]['store-key'];
+		cons[key]['last'] = value;
 	}
 	control_changed(key){
 		super.control_changed(key);
 		const k = this.unwrap_prepend_s(key);
 		const cons = this.selected_class().controls;
-		if (!(k in cons)) return;
-		cons[k]['last'] = this.find_element(key).value;
+		this.remember_value(cons, key, this.find_element(key).value)
 	}
 	selected_class(){
 		for (let i = 0; i < this.classes.length; i++){
@@ -273,29 +350,66 @@ export class SceneControlWithSelector extends SceneControl{
 	show_controls(){
 		const kls = this.selected_class();
 		const visible = Object.keys(kls.controls);
+
+		for (const obj of Object.values(this.sceneElements)) obj.deactivate();
 		this.controls.forEach((k) => {
-			const kk = this.unwrap_prepend_s(k);
-			const ele = this.find_element(k);
-			const eid = ele.id;
-			const div = document.querySelector("#" + eid + "-div");
-			if (visible.includes(kk)){
-				const def = kls.controls[kk];
-				const ovalue = def['default'];
-				let nvalue = def['last'];
-				if (nvalue === undefined) nvalue = ovalue;
-				if (nvalue !== undefined) ele.value = nvalue;
-				if (div === null) return;
-				const title = def['title'];
-				div.style.display = "flex";
-				if (title !== undefined && title !== null){
-					const lbl = div.querySelector("label");
-					if (lbl !== null) lbl.innerHTML = title;
-				}
-			}
-			else {
-				if (div === null) throw Error(`Missing <div> wrapper on input "${k}".`);
-				div.style.display = "none";
-			}
+			const pk = this.unwrap_prepend_s(k);
+			if (k == this.primaryKey) return;
+			this.sceneElements[k].set_active(visible.includes(pk));
 		});
+		const url = FindSceneURL();
+		for (const obj of Object.values(this.sceneElements)){
+			if (!obj.active) url.delete(obj.key);
+			else url.check_element(obj.key, obj.ele);
+		}
 	};
+	reset_all(){
+		for (const obj of Object.values(this.sceneElements)){
+			obj.reset();
+		}
+		super.reset_all();
+	}
+}
+
+export class SceneControlWithSelectorAutoBuild extends SceneControlWithSelector{
+	constructor(parent, primaryKey, classes, htmlElement, prepend){
+		let keys = new Set([primaryKey]);
+
+		classes.forEach((kls) => {
+			let newKeys = new Set(Object.keys(kls.controls));
+			keys = keys.union(newKeys);
+		});
+
+		const _k = (k) => {
+			let kk = parent.prepend + "-" + k;
+			if (prepend === undefined) return kk;
+			return parent.prepend + "-" + prepend + "-" + k
+		}
+		const sel = document.createElement("select");
+		sel.style='width:100%';
+		sel.id = _k(primaryKey);
+		htmlElement.appendChild(sel);
+
+		keys.forEach((k) => {
+			if (k === primaryKey) return;
+			const name = _k(k);
+			const ele = document.createElement('input');
+			const div = document.createElement('div');
+			const lbl = document.createElement('label');
+
+			div.classList = "form-group";
+			div.id = name + "-div";
+			ele.type = 'Number';
+			ele.id = name;
+			ele.name = name;
+
+			lbl.setAttribute('for', name);
+
+			div.appendChild(lbl);
+			div.appendChild(ele);
+			htmlElement.appendChild(div);
+		});
+
+		super(parent, primaryKey, classes, prepend);
+	}
 }

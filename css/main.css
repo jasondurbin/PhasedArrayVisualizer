@@ -135,16 +135,16 @@ select{
 	height: 40px;
 }
 #pa-progress{
-	width: 200px;
+	width: 300px;
 	display: block;
 }
 #pa-status{
-	font-size: 0.9em;
-	width: 200px;
+	font-size: 0.8em;
+	width: 300px;
 	text-align: center;
 }
 .pa-update-div{
-	width: 200px;
+	width: 300px;
 	margin: auto;
 }
 .text-group{
@@ -164,6 +164,9 @@ select{
 	margin: 10px 0;
 	display: block;
 	text-align: center;
+}
+.pa-settings input{
+	max-width: 60px;
 }
 .pa-settings > div{
 	background-color: var(--settings-bg-color);
@@ -186,6 +189,24 @@ select{
 }
 .form-group select{
 	width: 100%;
+}
+.footer-group{
+	display: flex;
+	gap: 1px 4px;
+	justify-content: right;
+	align-items: center;
+	flex-wrap: wrap;
+}
+.footer-group > div{
+	white-space: nowrap;
+	font-size:0.9em;
+}
+.footer-group input,
+.footer-group select{
+	padding: 2px;
+}
+.footer-group input{
+	max-width: 60px;
 }
 .canvas-grid,
 .canvas-full{

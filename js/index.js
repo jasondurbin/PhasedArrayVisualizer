@@ -1,4 +1,4 @@
-import {SceneControlPhasedArray, SceneControlFarfield} from "./index-scenes.js";
+import {SceneControlPhasedArray, SceneControlFarfieldDomain} from "./index-scenes.js";
 import {ScenePlotFarfieldCuts} from "./scene/plot-1d/scene-plot-farfield-cuts.js";
 import {ScenePlotFarfield2D} from "./scene/plot-2d/scene-plot-2d-farfield.js";
 import {ScenePlot2DGeometryPhase, ScenePlot2DGeometryAtten} from "./scene/plot-2d/scene-plot-2d-geometry.js";
@@ -21,7 +21,7 @@ export class PhasedArrayScene extends SceneParent{
 		super(prepend, ['refresh', 'reset'])
 		this.create_queue(this.find_element('progress'), this.find_element('status'));
 		this.arrayControl = new SceneControlPhasedArray(this);
-		this.farfieldControl = new SceneControlFarfield(this);
+		this.farfieldControl = new SceneControlFarfieldDomain(this, 'farfield-domain');
 
 		this.plotFF = new ScenePlotFarfield2D(this, this.find_element('farfield-canvas-2d'), 'farfield-2d-colormap');
 		this.plot1D = new ScenePlotFarfieldCuts(this, this.find_element('farfield-canvas-1d'), 'farfield-1d-colormap');
@@ -39,10 +39,10 @@ export class PhasedArrayScene extends SceneParent{
 			this.find_element('directivity-max').innerHTML = `Directivity: ${(10*Math.log10(v)).toFixed(2)} dB`
 		});
 
-		this.elements['refresh'].addEventListener('click', () => {
+		this.find_element('refresh').addEventListener('click', () => {
 			this.build_queue();
 		});
-		this.elements['reset'].addEventListener('click', () => {
+		this.find_element('reset').addEventListener('click', () => {
 			this.reset_parameters();
 			this.build_queue();
 		});

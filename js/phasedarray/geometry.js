@@ -280,13 +280,13 @@ export class SunflowerGeometry extends Geometry{
 
 export class SpiralGeometry extends Geometry{
 	static title = 'Spiral';
-	static args = ['dx', 'dy', 'min-ring', 'max-ring', 'offset-phase', 'spirals'];
+	static args = ['dx', 'dy', 'min-ring', 'max-ring', 'rotation', 'spirals'];
 	static controls = {
 		...CircularGeometry.controls,
-		'offset-phase': {'title': 'Offset Phase', 'type': "float", 'default': 10},
+		'rotation': {'title': 'Rotation', 'type': "float", 'default': 90},
 		'spirals': {'title': 'Spirals', 'type': "int", 'default': 6, 'min': 1},
 	};
-	constructor(dx, dy, minRing, maxRing, offsetPhase, spirals){
+	constructor(dx, dy, minRing, maxRing, rotation, spirals){
 		super();
 
 		if (dx <= 0) dx = 0.5
@@ -297,7 +297,7 @@ export class SpiralGeometry extends Geometry{
 		this.dx = Number(dx);
 		this.dy = Number(dy);
 
-		this.offsetPhase = Number(offsetPhase);
+		this.rotation = Number(rotation);
 		this.spirals = Number(spirals);
 
 		if (maxRing < minRing){
@@ -314,16 +314,20 @@ export class SpiralGeometry extends Geometry{
 	build(){
 		let x = [];
 		let y = [];
-		const step = 2*Math.PI/this.spirals;
-		const op = this.offsetPhase * Math.PI/180;
-		for (let s = 0; s < this.spirals; s++){
-			const ao = step*s;
-			for (let i = this.minRing; i < this.maxRing; i++){
-				if (i == 0) {
-					x.push(0);
-					y.push(0);
-					continue
-				}
+		const op = this.rotation/this.maxRing*Math.PI/180;
+
+		for (let i = this.minRing; i < this.maxRing; i++){
+			if (i == 0){
+				x.push(0);
+				y.push(0);
+				continue;
+			}
+			let count = this.spirals;
+			const maxCount = i*6;
+			if (count > maxCount) count = maxCount;
+			const step = 2*Math.PI/count;
+			for (let s = 0; s < count; s++){
+				const ao = step*s;
 				x.push(Math.cos(ao + i*op)*i*this.dx)
 				y.push(Math.sin(ao + i*op)*i*this.dy)
 			}

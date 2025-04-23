@@ -176,11 +176,11 @@ export class HexagonalY extends Hexagonal{
 
 export class CircularGeometry extends Geometry{
 	static title = 'Circular';
-	static args = ['dx', 'dy', 'min-ring', 'max-ring'];
+	static args = ['dx', 'dy', 'x-count', 'y-count'];
 	static controls = {
 		...Geometry.controls,
-		'min-ring': {'title': 'Start Ring', 'type': "int", 'default': 0, 'min': 0},
-		'max-ring': {'title': 'Stop Ring', 'type': "int", 'default': 8, 'min': 1},
+		'x-count': {'title': 'Start Ring', 'type': "int", 'default': 0, 'min': 0},
+		'y-count': {'title': 'Stop Ring', 'type': "int", 'default': 8, 'min': 1},
 	};
 	constructor(dx, dy, minRing, maxRing){
 		super();
@@ -225,7 +225,7 @@ export class CircularGeometry extends Geometry{
 
 export class SunflowerGeometry extends Geometry{
 	static title = 'Sunflower';
-	static args = ['dx', 'dy', 'min-ring', 'max-ring'];
+	static args = ['dx', 'dy', 'x-count', 'y-count'];
 	static controls = CircularGeometry.controls;
 	constructor(dx, dy, minRing, maxRing){
 		super();
@@ -280,7 +280,7 @@ export class SunflowerGeometry extends Geometry{
 
 export class SpiralGeometry extends Geometry{
 	static title = 'Spiral';
-	static args = ['dx', 'dy', 'min-ring', 'max-ring', 'rotation', 'spirals'];
+	static args = ['dx', 'dy', 'x-count', 'y-count', 'rotation', 'spirals'];
 	static controls = {
 		...CircularGeometry.controls,
 		'rotation': {'title': 'Rotation', 'type': "float", 'default': 90},
@@ -335,7 +335,6 @@ export class SpiralGeometry extends Geometry{
 		this.set_xy(Float32Array.from(x), Float32Array.from(y));
 	}
 }
-
 
 export const Geometries = [
 	RectangularGeometry,

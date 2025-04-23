@@ -17,16 +17,16 @@ export class Uniform{
 
 export class TrianglePedestal extends Uniform{
 	static title = 'Triangle on a Pedestal';
-	static args = ['triangle-pedestal'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'triangle-pedestal': {
+		'taper-par-1': {
 			'title': "Pedestal",
 			'type': "float",
 			'default': 0.0,
 			'min': 0.0,
 			'max': 1.0,
-			'step': 0.1,
+			'step': 0.1
 		},
 	};
 	constructor(pedestal){
@@ -44,16 +44,16 @@ export class TrianglePedestal extends Uniform{
 
 export class TaylorNBar extends Uniform{
 	static title = 'Taylor N-Bar';
-	static args = ['taylor-n-bar', 'taylor-sll'];
+	static args = ['taper-par-1', 'taper-par-2'];
 	static controls = {
 		...Uniform.controls,
-		'taylor-n-bar': {
+		'taper-par-1': {
 			'title': "N Bar",
 			'type': "int",
 			'default': 5,
-			'min': 1,
+			'min': 1
 		},
-		'taylor-sll': {
+		'taper-par-2': {
 			'title': "SLL",
 			'type': "float",
 			'default': 25.0,
@@ -98,10 +98,10 @@ export class TaylorNBar extends Uniform{
 
 export class TaylorModified extends Uniform{
 	static title = 'Taylor Modified';
-	static args = ['taylor-sll'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'taylor-sll': {
+		'taper-par-1': {
 			'title': "SLL",
 			'type': "float",
 			'default': 25.0,
@@ -167,23 +167,23 @@ export class Parzen extends Uniform{
 
 export class ParzenAlgebraic extends Uniform{
 	static title = 'Parzen Algebraic';
-	static args = ['parzen-alg-gamma', 'parzen-alg-u'];
+	static args = ['taper-par-1', 'taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'parzen-alg-gamma': {
+		'taper-par-1': {
 			'title': "Gamma",
 			'type': "float",
 			'default': 1.0,
-			'min': 0.001,
+			'min': 0.0,
 			'max': 1.0,
-			'step': 0.1,
+			'step': 0.1
 		},
-		'parzen-alg-u': {
+		'taper-par-2': {
 			'title': "u",
 			'type': "float",
 			'default': 2.0,
-			'min': 0.001,
-			'step': 0.1,
+			'min': 0.0,
+			'step': 0.1
 		},
 	};
 	constructor(gamma, u){
@@ -210,15 +210,15 @@ export class Welch extends Uniform{
 
 export class Connes extends Uniform{
 	static title = 'Connes';
-	static args = ['connes-alpha'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'connes-alpha': {
+		'taper-par-1': {
 			'title': "Alpha",
 			'type': "float",
 			'default': 1.0,
-			'min': 0.001,
-			'step': 0.1,
+			'min': 0.0,
+			'step': 0.1
 		},
 	};
 	constructor(alpha){
@@ -244,15 +244,15 @@ export class SinglaSingh extends Uniform{
 
 export class Lanczos extends Uniform{
 	static title = 'Lanczos';
-	static args = ['lanczos-l'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'lanczos-l': {
+		'taper-par-1': {
 			'title': "L",
 			'type': "float",
 			'default': 2.0,
-			'min': 0.001,
-			'step': 0.1,
+			'min': 0.0,
+			'step': 0.1
 		},
 	};
 	constructor(l){
@@ -291,16 +291,16 @@ export class delaVallePoussin extends Lanczos{
 
 export class RaisedCosine extends Uniform{
 	static title = 'Raised Cosine';
-	static args = ['cos-pedestal'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'cos-pedestal': {
+		'taper-par-1': {
 			'title': "Pedestal",
 			'type': "float",
 			'default': 0.75,
 			'min': 0.0,
 			'max': 1.0,
-			'step': 0.1,
+			'step': 0.05
 		},
 	};
 	constructor(alpha){
@@ -331,15 +331,15 @@ export class Hann extends RaisedCosine{
 
 export class GeneralizedHamming extends Uniform{
 	static title = 'Generalized Hamming';
-	static args = ['hamming-v'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'hamming-v': {
+		'taper-par-1': {
 			'title': "v",
 			'type': "float",
 			'default': 0.0,
 			'min': -0.5,
-			'step': 0.1,
+			'step': 0.1
 		},
 	};
 	constructor(v){
@@ -358,23 +358,23 @@ export class GeneralizedHamming extends Uniform{
 
 export class RaisedPowerofCosine extends Uniform{
 	static title = 'Raised Power-of-Cosine';
-	static args = ['cos-power', 'cos-pedestal'];
+	static args = ['taper-par-1', 'taper-par-2'];
 	static controls = {
 		...Uniform.controls,
-		'cos-power': {
+		'taper-par-1': {
 			'title': "Power",
 			'type': "float",
 			'default': 1.0,
 			'min': 0,
-			'step': 0.1,
+			'step': 0.1
 		},
-		'cos-pedestal': {
+		'taper-par-2': {
 			'title': "Pedestal",
 			'type': "float",
 			'default': 0.0,
 			'min': 0,
 			'max': 1.0,
-			'step': 0.1,
+			'step': 0.1
 		},
 	};
 	constructor(m, pedestal){
@@ -391,23 +391,23 @@ export class RaisedPowerofCosine extends Uniform{
 
 export class ParzenCosine extends Uniform{
 	static title = 'Parzen Cosine';
-	static args = ['parzen-cos-gamma', 'parzen-cos-power'];
+	static args = ['taper-par-1', 'taper-par-2'];
 	static controls = {
 		...Uniform.controls,
-		'parzen-cos-gamma': {
+		'taper-par-1': {
 			'title': "Gamma",
 			'type': "float",
 			'default': 0.5,
-			'min': 0.0001,
+			'min': 0.0,
 			'max': 1.0,
-			'step': 0.1,
+			'step': 0.1
 		},
-		'parzen-cos-power': {
+		'taper-par-2': {
 			'title': "Power",
 			'type': "float",
 			'default': 1.0,
 			'min': 0,
-			'step': 0.1,
+			'step': 0.1
 		},
 	};
 	constructor(gamma, m){
@@ -425,22 +425,22 @@ export class ParzenCosine extends Uniform{
 
 export class ParzenGeometric extends Uniform{
 	static title = 'Parzen Geometric';
-	static args = ['parzen-geo-alpha', 'parzen-geo-power'];
+	static args = ['taper-par-1', 'taper-par-2'];
 	static controls = {
 		...Uniform.controls,
-		'parzen-geo-alpha': {
+		'taper-par-1': {
 			'title': "Alpha",
 			'type': "float",
 			'default': 1.5,
 			'min': 0.0,
-			'step': 0.1,
+			'step': 0.1
 		},
-		'parzen-geo-power': {
+		'taper-par-2': {
 			'title': "Power",
 			'type': "float",
 			'default': 3.0,
 			'min': 0,
-			'step': 0.1,
+			'step': 0.1
 		},
 	};
 	constructor(alpha, r){
@@ -471,17 +471,17 @@ export class Bohman extends Uniform{
 
 export class Trapezoid extends Uniform{
 	static title = 'Trapezoid';
-	static args = ['trap-offset'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'trap-offset': {
+		'taper-par-1': {
 			'title': "Offset",
 			'type': "float",
 			'default': 0.1,
 			'min': 0.0,
 			'max': 0.5,
-			'desc': "Offset from center when trapezoid starts.",
 			'step': 0.1,
+			'desc': "Offset from center when trapezoid starts."
 		},
 	};
 	constructor(offset){
@@ -503,17 +503,17 @@ export class Trapezoid extends Uniform{
 
 export class Tukey extends Trapezoid{
 	static title = 'Tukey';
-	static args = ['tukey-offset'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'tukey-offset': {
+		'taper-par-1': {
 			'title': "Offset",
 			'type': "float",
 			'default': 0.1,
 			'min': 0.0,
 			'max': 0.5,
-			'desc': "Offset from center when curve starts.",
 			'step': 0.1,
+			'desc': "Offset from center when curve starts."
 		},
 	};
 	calculate_weights(x){
@@ -556,16 +556,16 @@ export class Blackman extends Uniform{
 
 export class Exponential extends Uniform{
 	static title = 'Exponential';
-	static args = ['exp-alpha'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'exp-alpha': {
+		'taper-par-1': {
 			'title': "Alpha",
 			'type': "float",
 			'default': 2.0,
 			'min': 0,
-			'desc': "Decay parameter",
 			'step': 0.1,
+			'desc': "Decay parameter"
 		},
 	};
 	constructor(alpha){
@@ -580,16 +580,16 @@ export class Exponential extends Uniform{
 
 export class HanningPoisson extends Uniform{
 	static title = 'Hanning-Poisson';
-	static args = ['hanning-poisson-alpha'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'hanning-poisson-alpha': {
+		'taper-par-1': {
 			'title': "Alpha",
 			'type': "float",
 			'default': 0.5,
 			'min': 0,
-			'desc': "Decay parameter.",
 			'step': 0.1,
+			'desc': "Decay parameter."
 		},
 	};
 	constructor(alpha){
@@ -605,16 +605,16 @@ export class HanningPoisson extends Uniform{
 
 export class Gaussian extends Uniform{
 	static title = 'Gaussian';
-	static args = ['gaussian-alpha'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'gaussian-alpha': {
+		'taper-par-1': {
 			'title': "Alpha",
 			'type': "float",
 			'default': 2.0,
 			'min': 0,
-			'desc': "Number of standard deviations at which truncation occurs.",
 			'step': 0.1,
+			'desc': "Number of standard deviations at which truncation occurs."
 		},
 	};
 	constructor(alpha){
@@ -629,24 +629,24 @@ export class Gaussian extends Uniform{
 
 export class ParzenExponential extends Uniform{
 	static title = 'Parzen Exponential';
-	static args = ['parzen-exp-alpha', 'parzen-exp-r'];
+	static args = ['taper-par-1', 'taper-par-2'];
 	static controls = {
 		...Uniform.controls,
-		'parzen-exp-alpha': {
+		'taper-par-1': {
 			'title': "Alpha",
 			'type': "float",
 			'default': 1.5,
 			'min': 0,
-			'desc': "Decay parameter.",
 			'step': 0.1,
+			'desc': "Decay parameter."
 		},
-		'parzen-exp-r': {
+		'taper-par-2': {
 			'title': "r",
 			'type': "float",
 			'default': 3.0,
 			'min': 0,
-			'desc': "Exponential power.",
 			'step': 0.1,
+			'desc': "Exponential power."
 		},
 	};
 	constructor(alpha, r){
@@ -663,10 +663,10 @@ export class ParzenExponential extends Uniform{
 
 export class DolphChebyshev extends Uniform{
 	static title = 'Dolph-Chebyshev';
-	static args = ['dolph-sll'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'dolph-sll': {
+		'taper-par-1': {
 			'title': "SLL",
 			'type': "float",
 			'default': 30,
@@ -688,14 +688,15 @@ export class DolphChebyshev extends Uniform{
 
 export class Cauchy extends Uniform{
 	static title = 'Cauchy';
-	static args = ['cauchy-alpha'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'cauchy-alpha': {
+		'taper-par-1': {
 			'title': "Alpha",
 			'type': "float",
 			'default': 3.0,
 			'min': 0,
+			'step': 0.1,
 			'desc': "Decay parameter."
 		},
 	};
@@ -711,15 +712,15 @@ export class Cauchy extends Uniform{
 
 export class KaiserBessel extends Uniform{
 	static title = 'Kaiser Bessel';
-	static args = ['kaiser-alpha'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'kaiser-alpha': {
+		'taper-par-1': {
 			'title': "Alpha",
 			'type': "float",
 			'default': 1.25,
 			'min': 0,
-			'step': 0.1,
+			'step': 0.05,
 		},
 	};
 	constructor(alpha){
@@ -734,15 +735,15 @@ export class KaiserBessel extends Uniform{
 
 export class Cosh extends Uniform{
 	static title = 'Cosh';
-	static args = ['cosh-alpha'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'cosh-alpha': {
+		'taper-par-1': {
 			'title': "Alpha",
 			'type': "float",
 			'default': 1.25,
 			'min': 0,
-			'step': 0.1,
+			'step': 0.05,
 		},
 	};
 	constructor(alpha){
@@ -757,15 +758,15 @@ export class Cosh extends Uniform{
 
 export class AvciNacaroglu extends Uniform{
 	static title = 'Avci-Nacaroglu Exponential';
-	static args = ['avci-alpha'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'avci-alpha': {
+		'taper-par-1': {
 			'title': "Alpha",
 			'type': "float",
 			'default': 1.25,
 			'min': 0,
-			'step': 0.1,
+			'step': 0.05,
 		},
 	};
 	constructor(alpha){
@@ -780,15 +781,15 @@ export class AvciNacaroglu extends Uniform{
 
 export class Knab extends Uniform{
 	static title = 'Knab';
-	static args = ['knab-alpha'];
+	static args = ['taper-par-1'];
 	static controls = {
 		...Uniform.controls,
-		'knab-alpha': {
+		'taper-par-1': {
 			'title': "Alpha",
 			'type': "float",
 			'default': 1.5,
 			'min': 0,
-			'step': 0.1,
+			'step': 0.05,
 		},
 	};
 	constructor(alpha){

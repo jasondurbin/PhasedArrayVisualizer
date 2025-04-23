@@ -10,7 +10,7 @@ export class FarfieldABC{
 	constructor(ax1Points, ax2Points){
 		ax1Points = Number(ax1Points)
 		ax2Points = Number(ax2Points)
-		// ensure samples are even
+		// ensure samples are odd
 		if (ax1Points % 2 == 0) ax1Points++;
 		if (ax2Points % 2 == 0) ax2Points++;
 
@@ -23,10 +23,9 @@ export class FarfieldABC{
 			this.farfield_total[i] = new Float32Array(ax1Points);
 			this.farfield_log[i] = new Float32Array(ax1Points);
 		}
-		this.meshPoints = [ax1Points, ax1Points];
+		this.meshPoints = [ax1Points, ax2Points];
 	}
 	get domain(){ return this.constructor.domain; };
-
 	_yield(text){
 		this.ac++;
 		return {
@@ -35,7 +34,6 @@ export class FarfieldABC{
 			max: this.maxProgress
 		};
 	}
-
 	reset_parameters(){
 		this.maxValue = -Infinity;
 		const [p1, p2] = this.meshPoints;

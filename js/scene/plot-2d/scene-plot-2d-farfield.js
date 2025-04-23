@@ -169,6 +169,8 @@ export class PlotFarfield2DEngineSpherical extends PlotFarfield2DEngineABC{
 			let ip = Math.round((Math.PI/2 + ph)/phiStep);
 			if (it >= ff.thetaPoints) it = ff.thetaPoints - 1;
 			if (ip >= ff.phiPoints) ip = ff.phiPoints - 1;
+			if (it < 0) it = 0;
+			if (ip < 0) ip = 0;
 			return [ff.theta[it]*180/Math.PI, ff.phi[ip]*180/Math.PI, it, ip];
 		};
 
@@ -261,8 +263,10 @@ export class PlotFarfield2DEngineUV extends PlotFarfield2DEngineABC{
 		ctx.translate(canvas.width/2, canvas.height/2);
 		ctx.scale(1.0, -1.0);
 		const smoothing = 1;
-		const uStep = (ff.u[1] - ff.u[0])*r/ur;
-		const vStep = (ff.v[1] - ff.v[0])*r/vr;
+		const du = (ff.u[1] - ff.u[0]);
+		const dv = (ff.v[1] - ff.v[0]);
+		const uStep = du*r/ur;
+		const vStep = dv*r/vr;
 
 		const uWidth = uStep+smoothing*2;
 		const vWidth = vStep+smoothing*2;
@@ -271,11 +275,13 @@ export class PlotFarfield2DEngineUV extends PlotFarfield2DEngineABC{
 			const rect = canvas.getBoundingClientRect();
 			const cu = 2*(e.clientX - rect.left)/rect.width - 1.0;
 			const cv = 1-2*(e.clientY - rect.top)/rect.height;
-			let iu = Math.round((cu + 1)*ur/(ff.u[1] - ff.u[0]));
-			let iv = Math.round((cv + 1)*vr/(ff.v[1] - ff.v[0]));
+			let iu = Math.round((cu + 1)*ur/du);
+			let iv = Math.round((cv + 1)*vr/dv);
 
 			if (iu >= ff.u.length) iu = ff.u.length - 1;
 			if (iv >= ff.v.length) iv = ff.v.length - 1;
+			if (iu < 0) iu = 0;
+			if (iv < 0) iv = 0;
 			return [ff.u[iu], ff.v[iv], iu, iv];
 		};
 
@@ -400,6 +406,8 @@ export class PlotFarfield2DEngineLudwig3 extends PlotFarfield2DEngineABC{
 
 			if (iu >= ff.az.length) iu = ff.az.length - 1;
 			if (iv >= ff.el.length) iv = ff.el.length - 1;
+			if (iu < 0) iu = 0;
+			if (iv < 0) iv = 0;
 
 			return [ff.az[iu]*180/Math.PI, ff.el[iv]*180/Math.PI, iu, iv];
 		};

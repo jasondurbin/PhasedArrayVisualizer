@@ -7,6 +7,7 @@ import {Tapers} from "./phasedarray/tapers.js"
 import {normalize} from "./util.js";
 
 export class SceneControlGeometry extends SceneControlWithSelectorAutoBuild{
+	static autoUpdateURL = false;
 	constructor(parent){
 		super(parent, 'geometry', Geometries, parent.find_element('geometry-controls'));
 		this.activeGeometry = null;
@@ -28,6 +29,7 @@ export class SceneControlGeometry extends SceneControlWithSelectorAutoBuild{
 }
 
 export class SceneControlPhasedArray extends SceneControl{
+	static autoUpdateURL = false;
 	constructor(parent){
 		super(parent, ['theta', 'phi', 'phase-bits', 'atten-lsb', 'atten-bits', 'atten-manual', 'phase-manual']);
 		this.pa = null;
@@ -166,6 +168,7 @@ export class SceneControlPhasedArray extends SceneControl{
 }
 
 export class SceneControlTaper extends SceneControlWithSelectorAutoBuild{
+	static autoUpdateURL = false;
 	constructor(parent, key, htmlElement){
 		super(parent, 'taper', Tapers, htmlElement, key);
 		this.activeTaper = null;
@@ -255,6 +258,7 @@ export class SceneControlTaper extends SceneControlWithSelectorAutoBuild{
 }
 
 export class SceneControlAllTapers extends SceneControl{
+	static autoUpdateURL = false;
 	constructor(parent){
 		super(parent, ['taper-sampling']);
 		this.xControl = new SceneControlTaper(parent, 'x', parent.find_element('taper-x-group'));
@@ -337,6 +341,7 @@ export class SceneControlAllTapers extends SceneControl{
 }
 
 export class SceneControlFarfieldDomain extends SceneControlWithSelector{
+	static autoUpdateURL = false;
 	constructor(parent){
 		super(parent, 'farfield-domain', FarfieldDomains);
 		this.ff = null;

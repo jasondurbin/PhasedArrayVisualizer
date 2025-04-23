@@ -85,7 +85,7 @@ export class ScenePlot1D extends ScenePlotABC{
 			const ctx = this._create_context();
 			let mx = 0.0
 			for (let i = 0; i < this.yGrid.length; i++){
-				let mt = ctx.measureText(this.yGrid[i].toString());
+				let mt = ctx.measureText(this.yGrid[i].toFixed(this.ypoints).toString());
 				mx = Math.max(mt.width, mx);
 			}
 			this.config['y-grid-text-width'] = mx;

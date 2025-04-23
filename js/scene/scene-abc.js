@@ -4,68 +4,85 @@ import {ListedColormapControl} from "../cmap/cmap-listed.js";
 import {SceneQueue} from "./scene-queue.js";
 import {ScenePopup, FindSceneURL} from "./scene-util.js";
 
-export class SceneElement{
-	constructor(key, ele){
-		this.key = key;
-		this.ele = ele;
-		this.active = false;
 
-		this.label = document.querySelector("label[for='" + ele.id + "']");
-		this.div = document.querySelector("#" + ele.id + "-div");
-
-		this.last = this.value;
-		ele.addEventListener('change', () => {
-			if (this.active) this.last = this.value;
-		})
-		this.cDict = {};
-	}
-	get value(){ return this.ele.value; }
-	set_value(value){ this.ele.value = value; }
-	load_from(cDict){
+export class SceneObjectParameterMap{
+	/**
+	* Create a mapped Parameter for Selecotrs.
+	*
+	* @param {SceneControlWithSelector} parent
+	* @param {String} skey Wrapped key (includes prepend)
+	* @param {String} okey Original key (key as it appears in class)
+	* @param {Object} cDict Control settings from class
+	*
+	* */
+	constructor(parent, skey, okey, cDict){
+		this.parent = parent;
+		this.skey = skey;
+		this.okey = okey;
+		this.ele = parent.find_element(skey);
 		this.cDict = cDict;
-		if ('default' in cDict){
-			this.last = cDict['default'];
-			this.ele.setAttribute('data-default-value', cDict['default']);
+		this.src = [];
+		parent.addEventListener('active-class-changed', (kls) => {
+			this.active_class_changed(kls);
+		});
+		this.ele.addEventListener('change', () => {
+			if (this.active) this.last = this.ele.value;
+		});
+		this.label = document.querySelector("label[for='" + this.ele.id + "']");
+		this.div = document.querySelector("#" + this.ele.id + "-div");
+		if (!('default' in cDict)) throw Error("Missing 'default'.");
+		this.default = cDict['default'];
+		this.last = this.default;
+		this.title = cDict['title'];
+
+		this.deactivate();
+
+		if (this.div !== null){
+			this.hide = () => {this.div.style.display = "none";};
+			this.show = () => {this.div.style.display = "flex";};
+		}
+		else{
+			this.hide = () => {};
+			this.show = () => {};
 		}
 	}
-	reset(){
-		if (this.active) return;
-		if ('default' in this.cDict){
-			const dv = this.cDict['default'];
-			this.last = dv;
-			this.ele.value = dv;
-		}
+	active_class_changed(kls){
+		this.set_visible(this.okey in kls.controls);
+		this.set_active(this.src.includes(kls));
 	}
-	activate(){
-		this.active = true;
-		let dv = null;
-		if ('default' in this.cDict) dv = this.cDict['default'];
-		this.ele.setAttribute('data-default-value', dv);
-
-		['min', 'max', 'step'].forEach((k) => {
-			if (k in this.cDict) this.ele.setAttribute(k, this.cDict[k]);
-			else this.ele.removeAttribute(k);
-		})
-
-		if (this.div !== null) this.div.style.display = "flex";
-		if (this.label === null) return;
-		const title = this.cDict['title'];
-		if (title === undefined || title === null) return;
-		this.label.innerHTML = title;
-		this.ele.value = this.last;
-	}
-	deactivate(){
-		this.active = false;
-		if (this.div !== null) this.div.style.display = "none";
+	add_src(src){ this.src.push(src); }
+	set_visible(visible){
+		if (visible) this.show();
+		else this.hide();
 	}
 	set_active(active){
 		if (active) this.activate();
 		else this.deactivate();
 	}
+	deactivate(){ this.active = false; }
+	activate(){
+		this.active = true;
+		this.ele.setAttribute('data-default-value', this.default);
+
+		['min', 'max', 'step'].forEach((k) => {
+			if (k in this.cDict) this.ele.setAttribute(k, this.cDict[k]);
+			else this.ele.removeAttribute(k);
+		})
+		this.ele.value = this.last;
+
+		if (this.label !== null && this.title !== undefined && this.title !== null){
+			this.label.innerHTML = this.title;
+		}
+	}
 }
 
 export class SceneObjectABC{
-	constructor(prepend, controls){
+	constructor(prepend, controls, autoUpdateURL){
+		if (autoUpdateURL === undefined){
+			if (this.constructor.autoUpdateURL !== undefined) autoUpdateURL = this.constructor.autoUpdateURL;
+			else autoUpdateURL = true;
+		}
+		this.autoUpdateURL = autoUpdateURL;
 		this.prepend = prepend;
 		this.colormap = {};
 		this.changed = {};
@@ -114,6 +131,15 @@ export class SceneObjectABC{
 	}
 	list_event_types(){ return this.eventTypes; }
 	add_event_types(...args){ this.eventTypes = this.eventTypes.union(new Set(args)); }
+
+	/**
+	* Find DOM element from id. This automatically prepends parent key.
+	*
+	* @param {String} id Element's ID
+	* @param {Boolean} [allowError=true] Throw error if not found? Default=true.
+	*
+	* @return {HTMLElement}
+	* */
 	find_element(id, allowError){
 		if (this.elements[id] !== undefined) return this.elements[id];
 		let eid = this.prepend + "-" + id;
@@ -169,12 +195,10 @@ export class SceneObjectABC{
 	}
 	add_child(child){ this._children.push(child); }
 	all_children(){
-		const children = [this];
+		let children = new Set([this]);
 		this._children.forEach((c) => {
-			children.push(c);
-			c.all_children().forEach((e) => {
-				children.push(e);
-			})
+			children.add(c);
+			children = children.union(c.all_children());
 		})
 		return children;
 	}
@@ -197,9 +221,23 @@ export class SceneParent extends SceneObjectABC{
 	}
 	bind_url_elements(){
 		const url = FindSceneURL();
-		this._iterate_children_controls((k, ele) => {
-			url.bind_element(k, ele);
+		this._iterate_children_controls((c, k, ele) => {
+			url.bind_element(k, ele, false, c.autoUpdateURL);
 		});
+	}
+	update_url_parameters(){
+		const url = FindSceneURL();
+		this._iterate_children_controls((c, k, ele) => {
+			if (c.autoUpdateURL) return;
+			url.check_element(k, ele);
+		});
+	}
+	reset_url_parameters(){
+		const url = FindSceneURL();
+		this._iterate_children_controls((c, k, ele) => {
+			url.reset_element(k, ele);
+		});
+		this.reset_all();
 	}
 	_iterate_children_controls(caller){
 		const cons = new Set([]);
@@ -207,22 +245,15 @@ export class SceneParent extends SceneObjectABC{
 			for (const [k, cmap] of Object.entries(c.colormap)){
 				const ele = cmap.selector;
 				if (cons.has(k)) continue;
-				caller(k, ele);
+				caller(c, k, ele);
 				cons.add(k);
 			}
 			for (const [k, ele] of Object.entries(c.elements)){
 				if (cons.has(k)) continue;
-				caller(k, ele);
+				caller(c, k, ele);
 				cons.add(k);
 			}
 		});
-	}
-	reset_parameters(){
-		const url = FindSceneURL();
-		this._iterate_children_controls((k, ele) => {
-			url.reset_element(k, ele);
-		});
-		this.reset_all();
 	}
 }
 
@@ -232,11 +263,13 @@ export class SceneControl extends SceneObjectABC{
 	*
 	* @param {SceneParent} parent
 	* @param {Array.<String>} controls List of control names required.
+	* @param {Boolean} [autoUpdateURL=true] Auto update controls when changing.
+	* If false, you must trigger URL update manually using `update_url_parameters`
 	*
 	* @return {SceneControlTaper}
 	* */
-	constructor(parent, controls){
-		super(parent.prepend, controls);
+	constructor(parent, controls, autoUpdateURL){
+		super(parent.prepend, controls, autoUpdateURL);
 		this.parent = parent;
 		parent.add_child(this);
 		parent.addEventListener('reset', () => {this.reset_all()})
@@ -252,7 +285,7 @@ export class SceneControl extends SceneObjectABC{
 }
 
 export class SceneControlWithSelector extends SceneControl{
-	constructor(parent, primaryKey, classes, prepend){
+	constructor(parent, primaryKey, classes, prepend, autoUpdateURL){
 		let keys = new Set([primaryKey]);
 		classes.forEach((kls) => {
 			keys = keys.union(new Set(Object.keys(kls.controls)));
@@ -271,14 +304,20 @@ export class SceneControlWithSelector extends SceneControl{
 			keys = wrap_prepend(keys);
 			primaryKey = prepend + "-" + primaryKey;
 		}
-		super(parent, keys);
+		super(parent, keys, autoUpdateURL);
+		this.add_event_types('primary-changed', 'active-class-changed');
 		this.sceneElements = {}
+
+		/** @type {Array<SceneObjectParameterMap>} */
+		this.objPars = [];
 		this.wrap_prepend = wrap_prepend;
 		this.unwrap_prepend = unwrap_prepend;
 		this.wrap_prepend_s = wrap_prepend_s;
 		this.unwrap_prepend_s = unwrap_prepend_s;
 		this.classes = classes;
 		this.primarySelector = this.find_element(primaryKey);
+
+		this.mapKey = "__map_" + primaryKey
 		classes.forEach((x) => {
 			const ele = document.createElement('option');
 			ele.value = x.title;
@@ -286,28 +325,35 @@ export class SceneControlWithSelector extends SceneControl{
 			this.primarySelector.appendChild(ele);
 			for (const [k, v] of Object.entries(x.controls)){
 				const kk = wrap_prepend_s(k);
-				if (kk in this.sceneElements) continue;
 				if (kk == primaryKey) continue;
-				const con = new SceneElement(kk, this.find_element(kk));
-				con.load_from(v)
-				this.sceneElements[kk] = con;
+				let smap;
+				if (!(this.mapKey in v)){
+					v[this.mapKey] = this.objPars.length;
+					smap = new SceneObjectParameterMap(this, kk, k, v);
+					this.objPars.push(smap);
+				}
+				else smap = this.objPars[v[this.mapKey]]
+				smap.add_src(x);
 			}
-		})
+		});
+		this.primarySelector.setAttribute('data-default-value', this.primarySelector[0].innerHTML);
 		this.primaryKey = primaryKey;
-		this.primarySelector.addEventListener('change', () => {this.show_controls();});
-		this.show_controls();
-	}
-	remember_value(cons, key, value, override){
-		if (!(key in cons)) return;
-		let skey = key;
-		if ('store-key' in cons[key]) skey = cons[key]['store-key'];
-		cons[key]['last'] = value;
-	}
-	control_changed(key){
-		super.control_changed(key);
-		const k = this.unwrap_prepend_s(key);
-		const cons = this.selected_class().controls;
-		this.remember_value(cons, key, this.find_element(key).value)
+
+		const _trigger_change = () => {
+			this.trigger_event('primary-changed', primaryKey, this.find_element(primaryKey).value);
+			this.trigger_event('active-class-changed', this.selected_class());
+		}
+		this.primarySelector.addEventListener('change', () => {
+			_trigger_change();
+		});
+		const url = FindSceneURL();
+		// bind the primary key first so that it will dispatch change.
+		url.bind_element(primaryKey, this.primarySelector, true, this.autoUpdateURL)
+
+		const kls = this.selected_class();
+		this.objPars.forEach((obj) => {
+			obj.active_class_changed(kls);
+		});
 	}
 	selected_class(){
 		for (let i = 0; i < this.classes.length; i++){
@@ -347,22 +393,6 @@ export class SceneControlWithSelector extends SceneControl{
 		})
 		return new kls(...args);
 	}
-	show_controls(){
-		const kls = this.selected_class();
-		const visible = Object.keys(kls.controls);
-
-		for (const obj of Object.values(this.sceneElements)) obj.deactivate();
-		this.controls.forEach((k) => {
-			const pk = this.unwrap_prepend_s(k);
-			if (k == this.primaryKey) return;
-			this.sceneElements[k].set_active(visible.includes(pk));
-		});
-		const url = FindSceneURL();
-		for (const obj of Object.values(this.sceneElements)){
-			if (!obj.active) url.delete(obj.key);
-			else url.check_element(obj.key, obj.ele);
-		}
-	};
 	reset_all(){
 		for (const obj of Object.values(this.sceneElements)){
 			obj.reset();

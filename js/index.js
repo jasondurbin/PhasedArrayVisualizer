@@ -41,9 +41,10 @@ export class PhasedArrayScene extends SceneParent{
 
 		this.find_element('refresh').addEventListener('click', () => {
 			this.build_queue();
+			this.update_url_parameters();
 		});
 		this.find_element('reset').addEventListener('click', () => {
-			this.reset_parameters();
+			this.reset_url_parameters();
 			this.build_queue();
 		});
 		this.create_popup_overlay();

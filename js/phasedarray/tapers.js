@@ -130,7 +130,7 @@ export class TaylorNBar extends Uniform{
 	}
 }
 
-export class TaylorModified extends Uniform{
+export class TaylorModified extends TaylorNBar{
 	static title = 'Taylor Modified';
 	static args = ['taper-par-1'];
 	static controls = {

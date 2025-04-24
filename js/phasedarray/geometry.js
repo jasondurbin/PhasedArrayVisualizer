@@ -3,7 +3,6 @@ import {linspace} from "../util.js";
 export class Geometry{
 	static args = [];
 	static controls = {
-		'geometry': {'title': null},
 		'dx': {'title': "X-Spacing (λ)", 'type': "float", 'min': 0.0, 'default': 0.5, 'step': 0.1},
 		'dy': {'title': "Y-Spacing (λ)", 'type': "float", 'min': 0.0, 'default': 0.5, 'step': 0.1}
 	};

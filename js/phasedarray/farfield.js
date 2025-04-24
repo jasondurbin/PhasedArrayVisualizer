@@ -3,7 +3,6 @@ import {linspace} from "../util.js";
 export class FarfieldABC{
 	static args = ['farfield-ax1-points', 'farfield-ax2-points'];
 	static controls = {
-		'farfield-domain': {'title': null},
 		'farfield-ax1-points': {'title': "Theta Points", 'type': "int", 'default': 257, 'min': 1},
 		'farfield-ax2-points': {'title': "Phi Points", 'type': "int", 'default': 257, 'min': 1}
 	};

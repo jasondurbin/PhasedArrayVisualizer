@@ -4,15 +4,21 @@
 * Many of these functions are from:
 * https://www.researchgate.net/publication/316281181_Catalog_of_Window_Taper_Functions_for_Sidelobe_Control
 * */
-import {bessel_modified_0, linspace, ones} from "../util.js";
+import {bessel_modified_0, linspace, normalize, ones} from "../util.js";
 
 export class Uniform{
 	static title = 'Uniform';
 	static args = [];
-	static controls = {
-		'taper': {'title': null},
-	};
+	static controls = {};
 	calculate_weights(x){ return ones(x.length); }
+	normalize_from_geometry(x, dx){ return normalize(x); }
+	normalize_from_radial_geometry(x, y, dx, dy){
+		const mr = Float32Array.from(x, (ix, i) => Math.sqrt(ix**2 + y[i]**2));
+		const maxR = Math.max(...mr);
+		return Float32Array.from(mr, (v) => v/maxR*0.5);
+	}
+	calculate_from_geometry(x, dx){ return this.calculate_weights(this.normalize_from_geometry(x, dx)); }
+	calculate_from_radial_geometry(x, y, dx, dy){ return this.calculate_weights(this.normalize_from_radial_geometry(x, y, dx, dy)); }
 }
 
 export class TrianglePedestal extends Uniform{
@@ -25,7 +31,8 @@ export class TrianglePedestal extends Uniform{
 			'type': "float",
 			'default': 0.0,
 			'min': 0.0,
-			'max': 1.0
+			'max': 1.0,
+			'step': 0.1
 		},
 	};
 	constructor(pedestal){
@@ -64,6 +71,30 @@ export class TaylorNBar extends Uniform{
 		this.nbar = nbar;
 		this.sll = Math.max(13, Math.abs(sll));
 	}
+	normalize_from_geometry(x, dx){
+		const maxX = Math.max(...x) + dx/2;
+		const minX = Math.min(...x) - dx/2;
+		const den = (maxX - minX);
+		return Float32Array.from(x, (xi) => (xi - minX)/den - 0.5);
+	}
+	normalize_from_radial_geometry(x, y, dx, dy){
+		const maxX = Math.max(...x);
+		const minX = Math.min(...x);
+		const maxY = Math.max(...y);
+		const minY = Math.min(...y);
+
+		const wx = (maxX - minX);
+		const wy = (maxY - minY);
+		const ms = Math.sqrt(wx**2 + wy**2);
+		const dr = dx*wx/ms + dy*wy/ms;
+
+		const ox = minX + wx/2
+		const oy = minY + wy/2
+
+		const mr = Float32Array.from(x, (xi, i) => Math.sqrt((xi - ox)**2 + (y[i] - oy)**2));
+		const maxR = Math.max(...mr) + dr/2;
+		return Float32Array.from(mr, (ri) => ri/maxR*0.5);
+	}
 	calculate_weights(x){
 		const nbar = this.nbar;
 		const sll = this.sll;
@@ -72,6 +103,7 @@ export class TaylorNBar extends Uniform{
 		const A = Math.acosh(nu)/Math.PI;
 		const A2 = A**2;
 		const sigma2 = nbar**2/(A2 + (nbar - 0.5)**2);
+		const Fm = [];
 
 		const _f = (m) => {
 			const c1 = (m**2/sigma2);
@@ -86,16 +118,19 @@ export class TaylorNBar extends Uniform{
 			}
 			return -1*((-1)**m/2)*f1/f2;
 		}
+		for (let m = 1; m < nbar; m++) Fm.push(_f(m));
 		const pi2 = 2*Math.PI;
 		return Float32Array.from(x, (e) => {
 			let a1 = 0.0;
-			for (let m = 1; m < nbar; m++) a1 += _f(m)*Math.cos(pi2*m*e);
+			for (let m = 0; m < Fm.length; m++){
+				a1 += Fm[m]*Math.cos(pi2*(m + 1)*e);
+			}
 			return 1 + 2*a1;
 		});
 	}
 }
 
-export class TaylorModified extends Uniform{
+export class TaylorModified extends TaylorNBar{
 	static title = 'Taylor Modified';
 	static args = ['taper-par-1'];
 	static controls = {
@@ -173,14 +208,16 @@ export class ParzenAlgebraic extends Uniform{
 			'title': "Gamma",
 			'type': "float",
 			'default': 1.0,
-			'min': 0.001,
-			'max': 1.0
+			'min': 0.0,
+			'max': 1.0,
+			'step': 0.1
 		},
 		'taper-par-2': {
 			'title': "u",
 			'type': "float",
 			'default': 2.0,
-			'min': 0.001
+			'min': 0.0,
+			'step': 0.1
 		},
 	};
 	constructor(gamma, u){
@@ -214,7 +251,8 @@ export class Connes extends Uniform{
 			'title': "Alpha",
 			'type': "float",
 			'default': 1.0,
-			'min': 0.001
+			'min': 0.0,
+			'step': 0.1
 		},
 	};
 	constructor(alpha){
@@ -247,7 +285,8 @@ export class Lanczos extends Uniform{
 			'title': "L",
 			'type': "float",
 			'default': 2.0,
-			'min': 0.001
+			'min': 0.0,
+			'step': 0.1
 		},
 	};
 	constructor(l){
@@ -294,7 +333,8 @@ export class RaisedCosine extends Uniform{
 			'type': "float",
 			'default': 0.75,
 			'min': 0.0,
-			'max': 1.0
+			'max': 1.0,
+			'step': 0.05
 		},
 	};
 	constructor(alpha){
@@ -332,7 +372,8 @@ export class GeneralizedHamming extends Uniform{
 			'title': "v",
 			'type': "float",
 			'default': 0.0,
-			'min': -0.5
+			'min': -0.5,
+			'step': 0.1
 		},
 	};
 	constructor(v){
@@ -358,14 +399,16 @@ export class RaisedPowerofCosine extends Uniform{
 			'title': "Power",
 			'type': "float",
 			'default': 1.0,
-			'min': 0
+			'min': 0,
+			'step': 0.1
 		},
 		'taper-par-2': {
 			'title': "Pedestal",
 			'type': "float",
 			'default': 0.0,
 			'min': 0,
-			'max': 1.0
+			'max': 1.0,
+			'step': 0.1
 		},
 	};
 	constructor(m, pedestal){
@@ -389,14 +432,16 @@ export class ParzenCosine extends Uniform{
 			'title': "Gamma",
 			'type': "float",
 			'default': 0.5,
-			'min': 0.0001,
-			'max': 1.0
+			'min': 0.0,
+			'max': 1.0,
+			'step': 0.1
 		},
 		'taper-par-2': {
 			'title': "Power",
 			'type': "float",
 			'default': 1.0,
-			'min': 0
+			'min': 0,
+			'step': 0.1
 		},
 	};
 	constructor(gamma, m){
@@ -422,12 +467,14 @@ export class ParzenGeometric extends Uniform{
 			'type': "float",
 			'default': 1.5,
 			'min': 0.0,
+			'step': 0.1
 		},
 		'taper-par-2': {
 			'title': "Power",
 			'type': "float",
 			'default': 3.0,
-			'min': 0
+			'min': 0,
+			'step': 0.1
 		},
 	};
 	constructor(alpha, r){
@@ -458,7 +505,7 @@ export class Bohman extends Uniform{
 
 export class Trapezoid extends Uniform{
 	static title = 'Trapezoid';
-	static args = ['taper-par-1'];
+	static args = ['taper-par-1', 'taper-par-2'];
 	static controls = {
 		...Uniform.controls,
 		'taper-par-1': {
@@ -467,27 +514,37 @@ export class Trapezoid extends Uniform{
 			'default': 0.1,
 			'min': 0.0,
 			'max': 0.5,
+			'step': 0.1,
 			'desc': "Offset from center when trapezoid starts."
 		},
+		'taper-par-2': {
+			'title': "Pedestal",
+			'type': "float",
+			'default': 0.0,
+			'min': 0,
+			'max': 1.0,
+			'step': 0.1,
+		}
 	};
-	constructor(offset){
+	constructor(offset, pedestal){
 		super();
 		this.offset = Math.min(0.5, Math.max(0, offset));
+		this.pedestal = Math.min(1.0, Math.max(0.0, Math.abs(pedestal)));
 	}
 	calculate_weights(x){
+		const p = this.pedestal;
 		const a = this.offset;
-		const sc = 2/(1 + 2*a);
-		const ad = 2/(1 - (2*a)**2);
+		const s = (1 - p)/(0.5 - a);
 		return Float32Array.from(x, (e) => {
 			const t = Math.abs(e);
-			if (t <= a) return sc;
-			if (t <= 0.5) return (1 - 2*t)*ad;
-			return 0.0
+			if (t <= a) return 1.0;
+			if (t <= 0.5) return (0.5 - t)*s + p;
+			return p
 		});
 	}
 }
 
-export class Tukey extends Trapezoid{
+export class Tukey extends Uniform{
 	static title = 'Tukey';
 	static args = ['taper-par-1'];
 	static controls = {
@@ -498,6 +555,7 @@ export class Tukey extends Trapezoid{
 			'default': 0.1,
 			'min': 0.0,
 			'max': 0.5,
+			'step': 0.1,
 			'desc': "Offset from center when curve starts."
 		},
 	};
@@ -549,6 +607,7 @@ export class Exponential extends Uniform{
 			'type': "float",
 			'default': 2.0,
 			'min': 0,
+			'step': 0.1,
 			'desc': "Decay parameter"
 		},
 	};
@@ -572,6 +631,7 @@ export class HanningPoisson extends Uniform{
 			'type': "float",
 			'default': 0.5,
 			'min': 0,
+			'step': 0.1,
 			'desc': "Decay parameter."
 		},
 	};
@@ -596,6 +656,7 @@ export class Gaussian extends Uniform{
 			'type': "float",
 			'default': 2.0,
 			'min': 0,
+			'step': 0.1,
 			'desc': "Number of standard deviations at which truncation occurs."
 		},
 	};
@@ -619,6 +680,7 @@ export class ParzenExponential extends Uniform{
 			'type': "float",
 			'default': 1.5,
 			'min': 0,
+			'step': 0.1,
 			'desc': "Decay parameter."
 		},
 		'taper-par-2': {
@@ -626,6 +688,7 @@ export class ParzenExponential extends Uniform{
 			'type': "float",
 			'default': 3.0,
 			'min': 0,
+			'step': 0.1,
 			'desc': "Exponential power."
 		},
 	};
@@ -676,6 +739,7 @@ export class Cauchy extends Uniform{
 			'type': "float",
 			'default': 3.0,
 			'min': 0,
+			'step': 0.1,
 			'desc': "Decay parameter."
 		},
 	};
@@ -699,6 +763,7 @@ export class KaiserBessel extends Uniform{
 			'type': "float",
 			'default': 1.25,
 			'min': 0,
+			'step': 0.05,
 		},
 	};
 	constructor(alpha){
@@ -721,6 +786,7 @@ export class Cosh extends Uniform{
 			'type': "float",
 			'default': 1.25,
 			'min': 0,
+			'step': 0.05,
 		},
 	};
 	constructor(alpha){
@@ -743,6 +809,7 @@ export class AvciNacaroglu extends Uniform{
 			'type': "float",
 			'default': 1.25,
 			'min': 0,
+			'step': 0.05,
 		},
 	};
 	constructor(alpha){
@@ -765,6 +832,7 @@ export class Knab extends Uniform{
 			'type': "float",
 			'default': 1.5,
 			'min': 0,
+			'step': 0.05,
 		},
 	};
 	constructor(alpha){
@@ -829,9 +897,9 @@ export const Tapers = [
 	Uniform,
 	TaylorNBar,
 	TaylorModified,
-	RaisedCosine,
+	//RaisedCosine,
 	RaisedPowerofCosine,
-	TrianglePedestal,
+	//TrianglePedestal,
 	Trapezoid,
 	Exponential,
 	Gaussian,

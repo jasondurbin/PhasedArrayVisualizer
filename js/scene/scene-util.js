@@ -48,6 +48,7 @@ export class SceneURL{
 	constructor(){
 		this.url = new URL(window.location);
 		this.url.search = this.url.searchParams;
+		this._known = []
 		this._needsUpdate = true;
 		const _url_checker = () => {
 			if (this._needsUpdate){
@@ -97,27 +98,74 @@ export class SceneURL{
 		this.url.searchParams.delete(param);
 		this._needsUpdate = true;
 	}
+	/**
+	* Reset element to default.
+	*
+	* @param {String} param Parameter/element name
+	* @param {HTMLElement} ele HTML DOM element.
+	* */
 	reset_element(param, ele){
-		let v = ele.getAttribute('data-default-value');
+		if (!element_saveable(ele)) return;
+		const v = ele.getAttribute('data-default-value');
 		if (element_setter(ele, v)) ele.dispatchEvent(new Event('change'));
 		this.delete(param);
 	}
-	bind_element(param, ele){
-		ele.addEventListener('change', () => {
-			this.set_param(param, ele.value);
-			if (ele.value === "") this.delete(param);
-		});
+	/**
+	* Bind an element to URL parameter watchlist.
+	*
+	* @param {String} param Parameter/element name
+	* @param {HTMLElement} ele HTML DOM element.
+	* @param {Boolean} [forceDispatch=false] Force event dispatch? (default=false)
+	* @param {Boolean} [autoUpdate=true] Auto update using element's 'change' event? (default=true)
+	* */
+	bind_element(param, ele, forceDispatch, autoUpdate){
+		if (!element_saveable(ele)) return;
+		if (this._known.includes(param)) return;
+		this._known.push(param);
+		if (autoUpdate === true || autoUpdate === undefined){
+			ele.addEventListener('change', () => {
+				this.check_element(param, ele);
+			});
+		}
+		ele.setAttribute('__url_bound', true);
 		let dv = ele.getAttribute('data-default-value');
+
+
 		if (dv === null){
-			dv = ele.value;
+			dv = element_getter(ele);
 			ele.setAttribute('data-default-value', dv);
 		}
-		const v = this.get_param(param);
-		if (v === undefined || v === null) return;
-		if (element_setter(ele, v)) ele.dispatchEvent(new Event('change'));
+		let v = this.get_param(param);
+		if (v === undefined || v === null){
+			if (forceDispatch) v = dv;
+			else return;
+		}
+		if (element_setter(ele, v) || forceDispatch) ele.dispatchEvent(new Event('change'));
+	}
+	/**
+	* Check if element needs to be added to URL.
+	*
+	* @param {String} param Parameter/element name
+	* @param {HTMLElement} ele HTML DOM element.
+	* */
+	check_element(param, ele){
+		let ev = element_getter(ele);
+		if (ev === "" || ele.getAttribute('data-default-value') == ev) this.delete(param);
+		else this.set_param(param, ev);
 	}
 }
 
+export function element_saveable(ele){
+	return ['SELECT', 'OPTION', 'INPUT'].includes(ele.nodeName)
+}
+
+/**
+* Set element's value. Return true if changed.
+*
+* @param {HTMLElement} ele
+* @param {any} value
+* @return {Boolean}
+* */
 export function element_setter(ele, value){
 	if (value === undefined || value === null) return false;
 	if (ele.type == 'number'){
@@ -143,6 +191,28 @@ export function element_setter(ele, value){
 	if (ele.type == 'submit') return false;
 	if (ele.type === undefined) return false;
 	throw Error(`Unknown element type ${ele.type}.`)
+}
+
+/**
+* Get element's value.
+*
+* @param {HTMLElement} ele
+* @return {any}
+* */
+export function element_getter(ele){
+	if (ele.type == 'number') return Number(ele.value);
+	if (ele.type == 'text') return ele.value;
+	if (ele.type == 'submit') return null;
+	if (ele.type === undefined) return null;
+	if (ele.type == 'select-one'){
+		for (let i = 0; i < ele.length; i++) {
+			const option = ele[i];
+			if (option.selected) return option.innerHTML;
+		}
+		return ele[0].innerHTML;
+	}
+	throw Error(`Unknown element type ${ele.type}.`)
+
 }
 
 export class ScenePopup{

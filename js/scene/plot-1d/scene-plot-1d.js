@@ -41,6 +41,8 @@ export class ScenePlot1D extends ScenePlotABC{
 
 		this._data = []
 		this.redrawWaiting = true;
+		this.ypoints = 1;
+		this.xpoints = 0;
 	}
 	get cPadding(){ return this.padding*this.scale; }
 	get cAxesFontSize(){ return this.axesFontSize*this.scale; }
@@ -51,6 +53,8 @@ export class ScenePlot1D extends ScenePlotABC{
 	set_xlabel(label){ this.xLabel = label; }
 	set_xgrid(start, stop, count){ this.xGrid = linspace(start, stop, count); }
 	set_ygrid(start, stop, count){ this.yGrid = linspace(start, stop, count); }
+	set_xgrid_points(points){ this.xpoints = Number(points); }
+	set_ygrid_points(points){ this.ypoints = Number(points); }
 	add_data(x, y, item){
 		this.redrawWaiting = true;
 		this._data.push({
@@ -81,17 +85,17 @@ export class ScenePlot1D extends ScenePlotABC{
 			const ctx = this._create_context();
 			let mx = 0.0
 			for (let i = 0; i < this.yGrid.length; i++){
-				let mt = ctx.measureText(this.yGrid[i].toString());
+				let mt = ctx.measureText(this.yGrid[i].toFixed(this.ypoints).toString());
 				mx = Math.max(mt.width, mx);
 			}
 			this.config['y-grid-text-width'] = mx;
 			minX += mx + textPadding;
 		}
 		else{ this.config['y-grid-text-width'] = 0.0; }
-		if (this.xLabel !== undefined){
+		if (this.xLabel !== undefined && this.xLabel != ''){
 			minY -= this.cAxesFontSize + textPadding;
 		}
-		if (this.yLabel !== undefined){
+		if (this.yLabel !== undefined && this.yLabel != ''){
 			minX += this.cAxesFontSize + textPadding;
 		}
 		this._ycBounds = [minY, this.cPadding]
@@ -101,7 +105,6 @@ export class ScenePlot1D extends ScenePlotABC{
 		return this.cmap.cmap()(i)
 	}
 	draw_data(){
-		const sc = 180/Math.PI;
 		const ctx = this._create_context();
 		const minX = this.xGrid[0];
 		const maxX = this.xGrid[this.xGrid.length - 1];
@@ -133,12 +136,12 @@ export class ScenePlot1D extends ScenePlotABC{
 			ctx.strokeStyle = c;
 			item.style.color = c;
 			if (item.classList.contains('disabled')) continue
-			const x = Float32Array.from(e['x'], (x) => x*sc);
+			const x = e['x'];
 			const y = e['y'];
 			ctx.beginPath();
 			for (let j = 0; j < x.length; j++){
-				let ix = _x(x[j]);
-				let iy = _y(y[j]);
+				const ix = _x(x[j]);
+				const iy = _y(y[j]);
 				if (j == 0) ctx.moveTo(ix, iy);
 				else ctx.lineTo(ix, iy)
 			}
@@ -172,13 +175,13 @@ export class ScenePlot1D extends ScenePlotABC{
 		const textPadding = this.cTextPadding;
 		const minX = this._xcBounds[0];
 
-		if (this.yLabel !== undefined){
-			ctx.textBaseline = 'top';
+		if (this.yLabel !== undefined && this.yLabel != ''){
+			ctx.textBaseline = 'bottom';
 			ctx.textAlign = 'center';
 			ctx.save();
 			ctx.beginPath();
 			ctx.translate(minX-textPadding*2-this.config['y-grid-text-width'], (this._ycBounds[0] + this._ycBounds[1])/2.0);
-			ctx.rotate(Math.PI/2);
+			ctx.rotate(-Math.PI/2);
 			ctx.fillText(this.yLabel, 0, 0);
 			ctx.stroke();
 			ctx.restore();
@@ -192,7 +195,7 @@ export class ScenePlot1D extends ScenePlotABC{
 				ctx.moveTo(minX, parseInt(sect[i]));
 				ctx.lineTo(maxX, parseInt(sect[i]));
 			}
-			ctx.fillText(this.yGrid[i].toString(), minX-textPadding, sect[i]);
+			ctx.fillText(this.yGrid[i].toFixed(this.ypoints).toString(), minX-textPadding, sect[i]);
 		}
 		ctx.stroke();
 		ctx.restore();
@@ -221,7 +224,7 @@ export class ScenePlot1D extends ScenePlotABC{
 				ctx.moveTo(parseInt(sect[i]), minY);
 				ctx.lineTo(parseInt(sect[i]), maxY);
 			}
-			ctx.fillText(this.xGrid[i].toString(), sect[i], minY+textPadding);
+			ctx.fillText(this.xGrid[i].toFixed(this.xpoints).toString(), sect[i], minY+textPadding);
 		}
 		ctx.stroke();
 		ctx.restore();

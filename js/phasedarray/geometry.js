@@ -3,14 +3,27 @@ import {linspace} from "../util.js";
 export class Geometry{
 	static args = [];
 	static controls = {
-		'geometry': {'title': null},
-		'dx': {'title': "X-Spacing (λ)", 'type': "float", 'min': 0.01},
-		'dy': {'title': "Y-Spacing (λ)", 'type': "float", 'min': 0.01}
+		'dx': {'title': "X-Spacing (λ)", 'type': "float", 'min': 0.0, 'default': 0.5, 'step': 0.1},
+		'dy': {'title': "Y-Spacing (λ)", 'type': "float", 'min': 0.0, 'default': 0.5, 'step': 0.1}
 	};
 	set_xy(x, y){
 		this.length = x.length;
 		this.x = x;
 		this.y = y;
+	}
+	auto_compute_dx_dy(index){
+		let dr = Infinity;
+		if (index === undefined) index = 0;
+		const x1 = this.x[index];
+		const y1 = this.y[index];
+		for (let i = 0; i < this.x.length; i++){
+			if (i == index) continue;
+			const x2 = this.x[i];
+			const y2 = this.y[i];
+			dr = Math.min(dr, Math.sqrt((x1 - x2)**2 + (y1 - y2)**2));
+		}
+		this.dx = dr;
+		this.dy = dr;
 	}
 }
 
@@ -20,7 +33,7 @@ export class RectangularGeometry extends Geometry{
 	static controls = {
 		...Geometry.controls,
 		'x-count': {'title': "X Count", 'type': "int", 'default': 8, 'min': 1},
-		'y-count': {'title': "Y Count", 'type': "int", 'default': 8, 'min': 1}
+		'y-count': {'title': "Y Count", 'type': "int", 'default': 8, 'min': 1},
 	};
 	constructor(dx, dy, xCount, yCount){
 		super();
@@ -91,11 +104,7 @@ export class RectangularOffsetYGeometry extends RectangularGeometry{
 export class Hexagonal extends Geometry{
 	static title = 'Hexagonal';
 	static args = ['dx', 'dy', 'x-count', 'y-count'];
-	static controls = {
-		...Geometry.controls,
-		'x-count': {'title': "X Count", 'type': "int", 'default': 8, 'min': 1},
-		'y-count': {'title': "Y Count", 'type': "int", 'default': 8, 'min': 1}
-	};
+	static controls = RectangularGeometry.controls;
 	constructor(dx, dy, xCount, yCount, axis){
 		super();
 
@@ -170,7 +179,7 @@ export class CircularGeometry extends Geometry{
 	static controls = {
 		...Geometry.controls,
 		'x-count': {'title': 'Start Ring', 'type': "int", 'default': 0, 'min': 0},
-		'y-count': {'title': 'Stop Ring', 'type': "int", 'default': 8, 'min': 1}
+		'y-count': {'title': 'Stop Ring', 'type': "int", 'default': 8, 'min': 1},
 	};
 	constructor(dx, dy, minRing, maxRing){
 		super();
@@ -216,11 +225,7 @@ export class CircularGeometry extends Geometry{
 export class SunflowerGeometry extends Geometry{
 	static title = 'Sunflower';
 	static args = ['dx', 'dy', 'x-count', 'y-count'];
-	static controls = {
-		...Geometry.controls,
-		'x-count': {'title': 'Start Ring', 'type': "int", 'default': 0, 'min': 0},
-		'y-count': {'title': 'Stop Ring', 'type': "int", 'default': 8, 'min': 1}
-	};
+	static controls = CircularGeometry.controls;
 	constructor(dx, dy, minRing, maxRing){
 		super();
 
@@ -271,6 +276,65 @@ export class SunflowerGeometry extends Geometry{
 		this.set_xy(Float32Array.from(x), Float32Array.from(y));
 	}
 }
+
+export class SpiralGeometry extends Geometry{
+	static title = 'Spiral';
+	static args = ['dx', 'dy', 'x-count', 'y-count', 'rotation', 'spirals'];
+	static controls = {
+		...CircularGeometry.controls,
+		'rotation': {'title': 'Rotation', 'type': "float", 'default': 90},
+		'spirals': {'title': 'Spirals', 'type': "int", 'default': 6, 'min': 1},
+	};
+	constructor(dx, dy, minRing, maxRing, rotation, spirals){
+		super();
+
+		if (dx <= 0) dx = 0.5
+		if (dy <= 0) dx = 0.5
+
+		if (spirals <= 1) spirals = 1;
+
+		this.dx = Number(dx);
+		this.dy = Number(dy);
+
+		this.rotation = Number(rotation);
+		this.spirals = Number(spirals);
+
+		if (maxRing < minRing){
+			let a = maxRing;
+			maxRing = minRing;
+			minRing = a;
+		}
+		if (minRing == maxRing) minRing = maxRing-1;
+		if (maxRing <= 0) maxRing = 1;
+
+		this.minRing = Math.max(0, Number(minRing));
+		this.maxRing = Number(maxRing);
+	}
+	build(){
+		let x = [];
+		let y = [];
+		const op = this.rotation/this.maxRing*Math.PI/180;
+
+		for (let i = this.minRing; i < this.maxRing; i++){
+			if (i == 0){
+				x.push(0);
+				y.push(0);
+				continue;
+			}
+			let count = this.spirals;
+			const maxCount = i*6;
+			if (count > maxCount) count = maxCount;
+			const step = 2*Math.PI/count;
+			for (let s = 0; s < count; s++){
+				const ao = step*s;
+				x.push(Math.cos(ao + i*op)*i*this.dx)
+				y.push(Math.sin(ao + i*op)*i*this.dy)
+			}
+		}
+		this.set_xy(Float32Array.from(x), Float32Array.from(y));
+	}
+}
+
 export const Geometries = [
 	RectangularGeometry,
 	RectangularOffsetXGeometry,
@@ -279,4 +343,5 @@ export const Geometries = [
 	HexagonalY,
 	CircularGeometry,
 	SunflowerGeometry,
+	SpiralGeometry,
 ]

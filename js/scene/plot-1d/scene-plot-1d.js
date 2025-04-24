@@ -92,10 +92,10 @@ export class ScenePlot1D extends ScenePlotABC{
 			minX += mx + textPadding;
 		}
 		else{ this.config['y-grid-text-width'] = 0.0; }
-		if (this.xLabel !== undefined){
+		if (this.xLabel !== undefined && this.xLabel != ''){
 			minY -= this.cAxesFontSize + textPadding;
 		}
-		if (this.yLabel !== undefined){
+		if (this.yLabel !== undefined && this.yLabel != ''){
 			minX += this.cAxesFontSize + textPadding;
 		}
 		this._ycBounds = [minY, this.cPadding]
@@ -175,13 +175,13 @@ export class ScenePlot1D extends ScenePlotABC{
 		const textPadding = this.cTextPadding;
 		const minX = this._xcBounds[0];
 
-		if (this.yLabel !== undefined){
-			ctx.textBaseline = 'top';
+		if (this.yLabel !== undefined && this.yLabel != ''){
+			ctx.textBaseline = 'bottom';
 			ctx.textAlign = 'center';
 			ctx.save();
 			ctx.beginPath();
 			ctx.translate(minX-textPadding*2-this.config['y-grid-text-width'], (this._ycBounds[0] + this._ycBounds[1])/2.0);
-			ctx.rotate(Math.PI/2);
+			ctx.rotate(-Math.PI/2);
 			ctx.fillText(this.yLabel, 0, 0);
 			ctx.stroke();
 			ctx.restore();

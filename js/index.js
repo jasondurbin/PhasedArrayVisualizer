@@ -1,4 +1,4 @@
-import {SceneControlPhasedArray, SceneControlFarfieldDomain} from "./index-scenes.js";
+import {SceneControlPhasedArray, SceneControlFarfieldDomain, SceneTaperCuts} from "./index-scenes.js";
 import {ScenePlotFarfieldCuts} from "./scene/plot-1d/scene-plot-farfield-cuts.js";
 import {ScenePlotFarfield2D} from "./scene/plot-2d/scene-plot-2d-farfield.js";
 import {ScenePlot2DGeometryPhase, ScenePlot2DGeometryAtten} from "./scene/plot-2d/scene-plot-2d-geometry.js";
@@ -25,6 +25,7 @@ export class PhasedArrayScene extends SceneParent{
 
 		this.plotFF = new ScenePlotFarfield2D(this, this.find_element('farfield-canvas-2d'), 'farfield-2d-colormap');
 		this.plot1D = new ScenePlotFarfieldCuts(this, this.find_element('farfield-canvas-1d'), 'farfield-1d-colormap');
+		this.plotTaper = new SceneTaperCuts(this, this.find_element('taper-canvas-1d'), 'taper-1d-colormap');
 		this.geoPhase = new ScenePlot2DGeometryPhase(this, this.find_element('geometry-phase-canvas'), 'geometry-phase-colormap');
 		this.geoAtten = new ScenePlot2DGeometryAtten(this, this.find_element('geometry-magnitude-canvas'), 'geometry-magnitude-colormap');
 		this.geoAtten.install_scale_control('atten-scale');
@@ -33,6 +34,7 @@ export class PhasedArrayScene extends SceneParent{
 		this.geoAtten.bind_phased_array_scene(this.arrayControl);
 		this.plot1D.bind_farfield_scene(this.farfieldControl);
 		this.plotFF.bind_farfield_scene(this.farfieldControl);
+		this.plotTaper.bind_phased_array_scene(this.arrayControl);
 		this.plot1D.install_scale_control('farfield-1d-scale');
 		this.plotFF.install_scale_control('farfield-2d-scale');
 		this.farfieldControl.add_max_monitor('directivity', (v) => {
@@ -40,8 +42,8 @@ export class PhasedArrayScene extends SceneParent{
 		});
 
 		this.find_element('refresh').addEventListener('click', () => {
-			this.build_queue();
 			this.update_url_parameters();
+			this.build_queue();
 		});
 		this.find_element('reset').addEventListener('click', () => {
 			this.reset_url_parameters();

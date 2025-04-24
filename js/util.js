@@ -1,3 +1,6 @@
+const c_deg2rad = Math.PI/180;
+const c_rad2deg = 180/Math.PI;
+
 /**
  * Convert input radians to degrees.
  *
@@ -6,8 +9,7 @@
  * @return {Float32Array}
  * */
 export function rad2deg(radians){
-	const sc = 180/Math.PI;
-	return Float32Array.from(radians, r => r*sc);
+	return Float32Array.from(radians, r => r*c_rad2deg);
 }
 
 /**
@@ -18,16 +20,15 @@ export function rad2deg(radians){
  * @return {Float32Array}
  * */
 export function deg2rad(degrees){
-	const sc = Math.PI/180;
-	return Float32Array.from(degrees, r => r*sc);
+	return Float32Array.from(degrees, r => r*c_deg2rad);
 }
 
 /**
  * Create a uniformly spaced Float32Array with `num` steps.
  *
- * @param {float} start
- * @param {float} stop
- * @param {int} num
+ * @param {Number} start
+ * @param {Number} stop
+ * @param {Number | int} num
  *
  * @return {Float32Array}
  * */
@@ -38,9 +39,9 @@ export function linspace(start, stop, num){
 /**
  * Create a range Float32Array.
  *
- * @param {int} [start=0] (optional)
- * @param {int} stop
- * @param {int} [step=1] (optional)
+ * @param {Number | int} [start=0] (optional)
+ * @param {Number | int} stop
+ * @param {Number | int} [step=1] (optional)
  *
  * @return {Float32Array}
  * */
@@ -59,9 +60,9 @@ export function arange(start, stop, step){
 /**
 * Calculate factorial of a number in log form.
 *
-* @param {float} v
+* @param {Number} v
 *
-* @return {float}
+* @return {Number}
 * */
 export function factorial_log(v){
 	if (v == 0) return 0.0;
@@ -75,9 +76,9 @@ export function factorial_log(v){
 /**
 * Calculate factorial of a number.
 *
-* @param {float} v
+* @param {Number} v
 *
-* @return {float}
+* @return {Number}
 * */
 function factorial(v) {
 	if (v === 0) return 1;
@@ -90,8 +91,8 @@ function factorial(v) {
 * Normalizes input to be between [-m, m].
 *
 * @param {Float32Array} x
-* @param {float} [m=0.5] (optional) Normalization bounds.
-* @param {float} [c=0.0] (optional) Center.
+* @param {Number} [m=0.5] (optional) Normalization bounds (default=0.5).
+* @param {Number} [c=0.0] (optional) Center (default=0.0).
 *
 * @return {Float32Array}
 * */
@@ -106,9 +107,9 @@ export function normalize(x, m, c){
 /**
 * Gamma function.
 *
-* @param {float} z
+* @param {Number} z
 *
-* @return {float}
+* @return {Number}
 * */
 export function gamma(z){
 	const g = 7;
@@ -136,7 +137,7 @@ export function gamma(z){
 /**
 * Create an array of ones.
 *
-* @param {int} len
+* @param {Number | int} len
 *
 * @return {Float32Array}
 * */
@@ -145,7 +146,7 @@ export function ones(len){ return Float32Array.from({length: len}, () => 1); }
 /**
 * Create an array of zeros.
 *
-* @param {int} len
+* @param {Number | int} len
 *
 * @return {Float32Array}
 * */
@@ -154,11 +155,11 @@ export function zeros(len){ return Float32Array.from({length: len}, () => 0); }
 /**
 * Calculate the zero-order Modified Bessel function.
 *
-* @param {float} x
-* @param {int} [maxIter=60] (optional) Max iteration
-* @param {float} [tolerance=1e-9] (optional) Calculation tolerance
+* @param {Number} x
+* @param {Number | int} [maxIter=60] (optional) Max iteration
+* @param {Number} [tolerance=1e-9] (optional) Calculation tolerance
 *
-* @return {float}
+* @return {Number}
 * */
 export function bessel_modified_0(x, maxIter, tolerance){
 	if (maxIter === undefined) maxIter = 50;
@@ -175,11 +176,11 @@ export function bessel_modified_0(x, maxIter, tolerance){
 /**
 * Adjust theta/phi such that each are [-90, 90] (or [-PI/2, PI/2]).
 *
-* @param {float} theta Theta
-* @param {float} phi Phi
-* @param {boolean} [deg=true] (optional) Input/Output in deg?
+* @param {Number} theta
+* @param {Number} phi
+* @param {Boolean} [deg=true] (optional) Input/Output in deg?
 *
-* @return {[float, float]} theta, phi
+* @return {[Number, Number]} theta, phi
 * */
 export function adjust_theta_phi(theta, phi, deg){
 	let o1 = 180;
@@ -194,4 +195,106 @@ export function adjust_theta_phi(theta, phi, deg){
 		theta = -theta;
 	}
 	return [theta, phi]
+}
+
+/**
+* Convolve two arrays.
+*
+* @param {Float32Array} array1
+* @param {Float32Array} array2
+*
+* @return {Float32Array}
+* */
+export function convolve(array1, array2){
+	const len1 = array1.length;
+	const len2 = array2.length;
+	return Float32Array.from({length: len1 + len2 - 1}, (_, i) => {
+		let sum = 0;
+		for (let j = 0; j < len2; j++){
+			if (i - j >= 0 && i - j < len1) sum += array1[i - j] * array2[j];
+	  	}
+		return sum;
+	})
+}
+
+/**
+* Convert az/el (Ludwig-3) to theta/phi (Spherical).
+*
+* https://www.mathworks.com/help/phased/ref/azel2phitheta.html
+*
+* @param {Number} az (deg)
+* @param {Number} el (deg)
+*
+* @return {[Number, Number]} theta, phi (deg)
+* */
+export function ludwig3_to_spherical(az, el){
+	const raz = c_deg2rad*az;
+	const rel = c_deg2rad*el;
+	return [
+		Math.acos(Math.cos(rel)*Math.cos(raz))*c_rad2deg,
+		Math.atan2(Math.tan(rel), Math.sin(raz))*c_rad2deg
+	];
+}
+
+/**
+* Convert theta/phi (Spherical) to az/el (Ludwig-3).
+*
+* https://www.mathworks.com/help/phased/ref/azel2phitheta.html
+*
+* @param {Number} theta (deg)
+* @param {Number} phi (deg)
+*
+* @return {[Number, Number]} az, el (deg)
+* */
+export function spherical_to_ludwig3(theta, phi){
+	const rth = c_deg2rad*theta;
+	const rph = c_deg2rad*phi;
+	return [
+		Math.atan(Math.cos(rph)*Math.tan(rth))*c_rad2deg,
+		Math.asin(Math.sin(rph)*Math.sin(rth))*c_rad2deg
+	];
+}
+
+/**
+* Convert theta/phi (Spherical) to u/v.
+*
+* https://www.mathworks.com/help/phased/ref/phitheta2uv.html
+*
+* @param {Number} theta (deg)
+* @param {Number} phi (deg)
+*
+* @return {[Number, Number]} u, v
+* */
+export function spherical_to_uv(theta, phi){
+	const rth = c_deg2rad*theta;
+	const rph = c_deg2rad*phi;
+	return [
+		Math.sin(rth)*Math.cos(rph),
+		Math.sin(rth)*Math.sin(rph)
+	];
+}
+
+/**
+* Convert u/v to theta/phi (Spherical).
+*
+* https://www.mathworks.com/help/phased/ref/phitheta2uv.html
+*
+* @param {Number} u (deg)
+* @param {Number} v (deg)
+* @param {Boolean} [adjust=true] Adjust U/V to ensure |U| < 1 && |V| < 1
+*
+* @return {[Number, Number]} theta, phi (deg)
+* */
+export function uv_to_spherical(u, v, adjust){
+	if (adjust === true || adjust === undefined){
+		while (u > 1.0) u -= 1.0;
+		while (u < -1.0) u += 1.0;
+		while (v > 1.0) v -= 1.0;
+		while (v < -1.0) v += 1.0;
+	}
+	if (Math.sqrt(u**2 + v**2) > 1) return [NaN, NaN]
+	return [
+		Math.asin(Math.sqrt(u**2 + v**2))*c_rad2deg,
+		Math.atan2(v, u)*c_rad2deg
+	];
 }

@@ -106,6 +106,7 @@ a:hover{
 }
 .body-content{
 	max-width: 800px;
+	line-height: 1.5em;
 }
 .theme-toggle{
 	background-color: var(--theme-bg-color);

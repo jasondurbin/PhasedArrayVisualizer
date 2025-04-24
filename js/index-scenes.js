@@ -1,10 +1,13 @@
 import {SceneControl, SceneControlWithSelector, SceneControlWithSelectorAutoBuild, SceneParent} from "./scene/scene-abc.js";
 import {SceneQueue} from "./scene/scene-queue.js";
+import {FindSceneURL} from "./scene/scene-util.js";
+import {ScenePlot1D} from "./scene/plot-1d/scene-plot-1d.js";
 import {Geometries} from "./phasedarray/geometry.js";
 import {PhasedArray} from "./phasedarray/phasedarray.js";
 import {FarfieldDomains} from "./phasedarray/farfield.js"
+import {SteeringDomains} from "./phasedarray/steering.js"
 import {Tapers} from "./phasedarray/tapers.js"
-import {normalize} from "./util.js";
+import {linspace} from "./util.js";
 
 export class SceneControlGeometry extends SceneControlWithSelectorAutoBuild{
 	static autoUpdateURL = false;
@@ -31,10 +34,11 @@ export class SceneControlGeometry extends SceneControlWithSelectorAutoBuild{
 export class SceneControlPhasedArray extends SceneControl{
 	static autoUpdateURL = false;
 	constructor(parent){
-		super(parent, ['theta', 'phi', 'phase-bits', 'atten-lsb', 'atten-bits', 'atten-manual', 'phase-manual']);
+		super(parent, ['phase-bits', 'atten-lsb', 'atten-bits', 'atten-manual', 'phase-manual']);
 		this.pa = null;
 		this.geometryControl = new SceneControlGeometry(this);
 		this.taperControl = new SceneControlAllTapers(this);
+		this.steerControl = new SceneControlSteeringDomain(this);
 		this.add_event_types(
 			'phased-array-changed',
 			'phased-array-phase-changed',
@@ -49,7 +53,7 @@ export class SceneControlPhasedArray extends SceneControl{
 	* @return {null}
 	* */
 	add_to_queue(queue){
-		let needsPhase = this.changed['theta'] || this.changed['phi'];
+		let needsPhase = this.steerControl.calculationWaiting;
 		let needsAtten = this.taperControl.calculationWaiting;
 		let needsRecalc = false;
 		let needsPhaseQ = this.changed['phase-bits'];
@@ -75,12 +79,9 @@ export class SceneControlPhasedArray extends SceneControl{
 		}
 		if (needsPhase){
 			queue.add('Calculating phase...', () => {
-				this.pa.set_theta_phi(
-					this.find_element('theta').value,
-					this.find_element('phi').value
-				)
+				const [theta, phi] = this.steerControl.get_theta_phi();
+				this.pa.set_theta_phi(theta, phi);
 				this.pa.compute_phase();
-				this.clear_changed('theta', 'phi');
 			});
 			needsRecalc = true;
 		}
@@ -138,6 +139,9 @@ export class SceneControlPhasedArray extends SceneControl{
 		if (Object.keys(pconfig).length === 0) pele.value = "";
 		else pele.value = JSON.stringify(pconfig);
 		pele.dispatchEvent(new Event('change'))
+		const url = FindSceneURL();
+		url.check_element('atten-manual', mele);
+		url.check_element('phase-manual', pele);
 	}
 	load_hidden_controls(){
 		const pa = this.pa;
@@ -263,6 +267,7 @@ export class SceneControlAllTapers extends SceneControl{
 		super(parent, ['taper-sampling']);
 		this.xControl = new SceneControlTaper(parent, 'x', parent.find_element('taper-x-group'));
 		this.yControl = new SceneControlTaper(parent, 'y', parent.find_element('taper-y-group'));
+		this.add_event_types('taper-changed');
 	}
 	get calculationWaiting(){
 		return (
@@ -311,39 +316,46 @@ export class SceneControlAllTapers extends SceneControl{
 			queue.add("Calculating X taper...", () => {
 				this.clear_changed('taper-sampling');
 				const t = this.xControl.activeTaper;
-				taperX = t.calculate_weights(normalize(src.pa.geometry.x));
+				const geo = src.pa.geometry;
+				taperX = t.calculate_from_geometry(geo.x, geo.dx);
 			});
 			queue.add("Calculating Y taper...", () => {
 				const t = this.yControl.activeTaper;
-				taperY = t.calculate_weights(normalize(src.pa.geometry.y));
+				const geo = src.pa.geometry;
+				taperY = t.calculate_from_geometry(geo.y, geo.dy);
 			});
 			queue.add("Multiplying tapers...", () => {
+				this.trigger_event('taper-changed');
 				src.pa.set_magnitude_weight(Float32Array.from(taperX, (x, i) => x * taperY[i]));
 			});
 		}
 		else{
-			let geor;
 			// we're doing r sampling.
-			queue.add("Calculating radial information...", () => {
-				this.clear_changed('taper-sampling');
-				const x = normalize(src.pa.geometry.x);
-				const y = normalize(src.pa.geometry.y);
-				const r = Float32Array.from(x, (ix, i) => Math.sqrt(ix**2 + y[i]**2));
-				const maxR = Math.max(...r);
-				geor = Float32Array.from(r, (v) => v/maxR*0.5);
-			});
 			queue.add("Calculating taper...", () => {
 				const t = this.xControl.activeTaper;
-				src.pa.set_magnitude_weight(t.calculate_weights(geor))
+				const geo = src.pa.geometry;
+				src.pa.set_magnitude_weight(t.calculate_from_radial_geometry(geo.x, geo.y, geo.dx, geo.dy));
+				this.trigger_event('taper-changed');
 			});
 		}
+	}
+	create_samples(points, axis){
+		const x = linspace(-1, 1, points);
+		const dx = x[1] - x[0];
+		let y;
+		if (this.find_element('taper-sampling')[0].selected){
+			if (axis == 'x') y = this.xControl.activeTaper.calculate_from_geometry(x, dx);
+			else y = this.yControl.activeTaper.calculate_from_geometry(x, dx);
+		}
+		else y = this.xControl.activeTaper.calculate_from_geometry(x, dx);
+		return [x, y];
 	}
 }
 
 export class SceneControlFarfieldDomain extends SceneControlWithSelector{
 	static autoUpdateURL = false;
-	constructor(parent){
-		super(parent, 'farfield-domain', FarfieldDomains);
+	constructor(parent, key){
+		super(parent, key, FarfieldDomains);
 		this.ff = null;
 		this.validMaxMonitors = new Set(['directivity']);
 		this.maxMonitors = {};
@@ -397,5 +409,81 @@ export class SceneControlFarfieldDomain extends SceneControlWithSelector{
 			})
 		}
 		this.needsRedraw = needsRecalc;
+	}
+}
+
+export class SceneControlSteeringDomain extends SceneControlWithSelector{
+	static autoUpdateURL = false;
+	constructor(parent){
+		super(parent, 'steering-domain', SteeringDomains);
+		this._last = this.selected_class();
+	}
+	get calculationWaiting(){return this.changed['theta'] || this.changed['phi'] || this.changed['steering-domain']};
+	control_changed(key){
+		if (key == this.primaryKey){
+			if (this._last === undefined) return;
+			const c1 = this.find_object_map('theta');
+			const c2 = this.find_object_map('phi');
+			const p1 = Number(c1.ele.value);
+			const p2 = Number(c2.ele.value);
+			const obj = this.build_active_object();
+			let [n1, n2] = obj.from(this._last.title, p1, p2);
+			if (isNaN(n1) || isNaN(n2)){
+				n1 = 0.0;
+				n2 = 0.0;
+			}
+			c1.set_value(n1);
+			c2.set_value(n2);
+			this._last = this.selected_class();
+		}
+		super.control_changed(key);
+	}
+	get_theta_phi(){
+		const obj = this.build_active_object();
+		this.clear_changed('theta', 'phi', 'steering-domain');
+		return [obj.theta_deg, obj.phi_deg];
+	}
+}
+
+export class SceneTaperCuts extends ScenePlot1D{
+	draw(){
+		this.reset();
+		this.set_xlabel('Window');
+		this.set_ylabel('Magnitude');
+		this.set_xgrid(-0.5, 0.5, 11);
+		this.set_xgrid_points(1);
+
+		const pa = this.arrayScene;
+		if (pa === undefined || pa == null) return;
+		const taper = pa.taperControl;
+		if (taper === undefined || taper === null) return;
+
+		let belowZero = false;
+		this.legend_items().forEach((e) => {
+			const v = e.getAttribute('data-axis');
+			if (v !== null){
+				const [x, y] = taper.create_samples(101, v);
+				const maxV = Math.max(...Float32Array.from(y, (i) => Math.abs(i)));
+				const minV = Math.min(...y);
+				if (minV < 0) belowZero = true;
+				if (x !== null) this.add_data(x, Float32Array.from(y, (i) => i/maxV), e);
+			}
+		});
+		if (belowZero) this.set_ygrid(-1, 1, 11);
+		else this.set_ygrid(0, 1, 11);
+		super.draw();
+	}
+	/**
+	* Bind a Phased Array Scene.
+	*
+	* @param {SceneControlPhasedArray} scene
+	*
+	* @return {null}
+	* */
+	bind_phased_array_scene(scene){
+		this.arrayScene = scene;
+		scene.taperControl.addEventListener('taper-changed', () => {
+			this.draw();
+		});
 	}
 }

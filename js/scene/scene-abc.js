@@ -4,7 +4,6 @@ import {ListedColormapControl} from "../cmap/cmap-listed.js";
 import {SceneQueue} from "./scene-queue.js";
 import {ScenePopup, FindSceneURL} from "./scene-util.js";
 
-
 export class SceneObjectParameterMap{
 	/**
 	* Create a mapped Parameter for Selecotrs.
@@ -13,7 +12,6 @@ export class SceneObjectParameterMap{
 	* @param {String} skey Wrapped key (includes prepend)
 	* @param {String} okey Original key (key as it appears in class)
 	* @param {Object} cDict Control settings from class
-	*
 	* */
 	constructor(parent, skey, okey, cDict){
 		this.parent = parent;
@@ -34,9 +32,7 @@ export class SceneObjectParameterMap{
 		this.default = cDict['default'];
 		this.last = this.default;
 		this.title = cDict['title'];
-
 		this.deactivate();
-
 		if (this.div !== null){
 			this.hide = () => {this.div.style.display = "none";};
 			this.show = () => {this.div.style.display = "flex";};
@@ -45,6 +41,10 @@ export class SceneObjectParameterMap{
 			this.hide = () => {};
 			this.show = () => {};
 		}
+	}
+	set_value(value){
+		this.last = value;
+		if (this.active) this.ele.value = value;
 	}
 	active_class_changed(kls){
 		this.set_visible(this.okey in kls.controls);
@@ -354,6 +354,10 @@ export class SceneControlWithSelector extends SceneControl{
 		this.objPars.forEach((obj) => {
 			obj.active_class_changed(kls);
 		});
+	}
+	find_object_map(key, kls){
+		if (kls === undefined) kls = this.selected_class();
+		return this.objPars[kls.controls[key][this.mapKey]]
 	}
 	selected_class(){
 		for (let i = 0; i < this.classes.length; i++){

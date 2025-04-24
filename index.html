@@ -50,6 +50,7 @@
 			</div>
 			<div>
 				<h3>Steering</h3>
+				<select id="pa-steering-domain" style="width:100%;"></select>
 				<div class="form-group" id="pa-theta-div">
 					<label for="pa-theta">Theta (deg)</label>
 					<input type="number" min="-90" max="90" value="0" id="pa-theta" name="pa-theta" />
@@ -58,6 +59,17 @@
 					<label for="pa-phi">Phi (deg)</label>
 					<input type="number" min="-90" max="90" value="0" id="pa-phi" name="pa-phi" />
 				</div>
+			</div>
+			<div>
+				<h3>Taper(s)</h3>
+				<div class="form-group" id="pa-taper-sampling-div">
+					<label for="pa-taper-sampling">Sampling</label>
+					<select id="pa-taper-sampling"><option>X & Y</option><option>Radial</option></select>
+				</div>
+				<div id="pa-taper-x-group" style="margin: 5px 0px;"></div>
+				<div id="pa-taper-y-group" style="margin: 5px 0px;"></div>
+			</div>
+			<div>
 				<h3>Quantization</h3>
 				<div class="form-group" id="pa-phase-bits-div">
 					<label for="pa-phase-bits">Phase Bits</label>
@@ -74,15 +86,6 @@
 				<div class="form-group" style="font-size:0.7em;font-style: italic;">
 					0 bits would be no quantization.
 				</div>
-			</div>
-			<div>
-				<h3>Taper(s)</h3>
-				<div class="form-group" id="pa-taper-sampling-div">
-					<label for="pa-taper-sampling">Sampling</label>
-					<select id="pa-taper-sampling"><option>X & Y</option><option>Radial</option></select>
-				</div>
-				<div id="pa-taper-x-group" style="margin: 5px 0px;"></div>
-				<div id="pa-taper-y-group" style="margin: 5px 0px;"></div>
 			</div>
 		</div>
 		<div class="pa-update-div">
@@ -155,7 +158,7 @@
 	</div>
 	<div class="canvas-full">
 		<div class="canvas-container">
-			<div class="canvas-header"><h2>1-D Pattern Cuts</h2><span>&nbsp;</span></div>
+			<div class="canvas-header"><h2>1-D Pattern Cuts</h2></div>
 			<div class="canvas-wrapper">
 				<canvas id="pa-farfield-canvas-1d"></canvas>
 			</div>
@@ -174,23 +177,49 @@
 			</div>
 		</div>
 	</div>
+	<div class="canvas-full">
+		<div class="canvas-container">
+			<div class="canvas-header"><h2>Taper</h2></div>
+			<div class="canvas-wrapper">
+				<canvas id="pa-taper-canvas-1d"></canvas>
+			</div>
+			<div class="canvas-footer">
+				<div class="canvas-legend">
+					<span class="legend-item" data-axis="x" data-visible="true">X-Axis</span>
+					<span class="legend-item" data-axis="y" data-visible="true">Y-Axis</span>
+					<span style='font-size:0.8em'>Click to hide/show trace.</span>
+				</div>
+				<div>
+					<label for="pa-taper-1d-colormap">Colormap</label>
+					<select id="pa-taper-1d-colormap" name="pa-taper-1d-colormap"></select>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div class="body-content">
 		<h2>About</h2>
-		<p>This tool allows you to change a phased array's geometry, element spacing, and steering position.</p>
-		<p>This demo was created by <a href="http://jasonleodurbin.com" target="_blank">Jason Durbin</a>. The final implementation will be hosted on <a href='https://neonphysics.com' target='_blank'>neonphysics.com</a>.
-		<h2>Information</h2>
-		<p>The provided directivity calculation assumes half-hemisphere radiation (+3 dB).</p>
-		<p>The farfield mesh can be made finer by changing 'Theta Points' and 'Phi Points'; however, this may result in a laggy performance.</p>
-		<p>Clicking (or long pressing) elements in the phase/attenuation plots allows you to manually set phase/attenuation. Additionally, the attenuation pop-up allows you to
-			disable an element.
-		</p>
-		<p>Hovering (or touching on mobile devices) the 2-D farfield mesh or the geometry plots will show the value of the plot under the cursor.</p>
+		<p>This tool allows you to change a phased array's geometry, element spacing, steering position, add sidelobe tapering, and other features.</p>
+		<p>This demo was created by <a href="http://jasonleodurbin.com" target="_blank">Jason Durbin</a>, a <a href="https://www.linkedin.com/in/jasondurbin/" target="_blank">free-lancing phased array engineer</a>.
+		<h2>Usage and Notes</h2>
+		<ul>
+			<li>Antenna elements are assumed to be isotropic. However, the directivity calculation assumes half-hemisphere radiation (e.g. no back lobes). Therefore, the computed directivity will be 3 dBi higher than using pure isotropic. Said in different terms, the individual element gain is +3.0 dBi.</li>
+			<li>The mesh can be made finer by increasing theta/phi, u/v, or az/el points. However, increasing the number of points may result in laggy performance.</li>
+			<li>Clicking (or long pressing) elements in the phase/attenuation plots allows you to manually set phase/attenuation. <b>Be sure to select "enable override."</b> Additionally, the attenuation pop-up allows you to disable elements.</li>
+			<li>Hovering (or touching) the 2-D farfield plot or geometry plots will show the value of the plot under the cursor.</li>
+		</ul>
 		<h2>Commercial Use</h2>
-		<p>If your company sells phased arrays, BFICs, etc. and would like to use a version of this tool on your website, contact hello@neonphysics.com.</p>
+		<p>This tool or any derivatives of this tool may not be hosted on commercial websites (internal or external) without approval. Of course, you are welcome to share the URL.</p>
+		<p>If your company sells phased arrays, beamforming ICs, or other phased array related products and you'd like host a bespoke version of this tool on your website, please contact <a href='mailto:hello@neonphysics.com'>hello@neonphysics.com</a></p>
 		<p>Commercial use is otherwise prohibited.</p>
+		<h2>Donation and Feedback</h2>
+		<p>If you enjoy this visualizer, please consider donating <a href='https://www.paypal.com/donate/?business=D7S3JKRAAKUNQ&no_recurring=0&currency_code=USD' target="_blank">using PayPal</a>.</p>
+		<p>If you have any recommendations, feedback, or requests, feel free to send Jason a message <a href='https://www.linkedin.com/in/jasondurbin/' target='_blank'>on LinkedIn</a> or send an email to <a href='mailto:hello@neonphysics.com'>hello@neonphysics.com</a>.
 		<h2>Attributions</h2>
-		<p>Meshing colormaps are generated to match <a href='https://matplotlib.org/stable/users/explain/colors/colormaps.html' target="_blank">matplotlib's</a>. Listed colormaps are from <a href="https://cran.r-project.org/web/packages/khroma/vignettes/tol.html" target="_blank">Paul Tol's Color Scheme</a>.</p>
-		<p>Most of the tapers were pulled from <a href='https://www.researchgate.net/publication/316281181_Catalog_of_Window_Taper_Functions_for_Sidelobe_Control' target="_blank">"Catalog of Window Taper Functions for Sidelobe Control" by Armin W. Doerry</a>.</p>
+		<ul>
+			<li>Meshing colormaps are generated to match <a href='https://matplotlib.org/stable/users/explain/colors/colormaps.html' target="_blank">matplotlib's</a>.</li>
+			<li>Listed colormaps are from <a href="https://cran.r-project.org/web/packages/khroma/vignettes/tol.html" target="_blank">Paul Tol's Color Scheme</a>.</li>
+			<li>Most of the tapers were pulled from <a href='https://www.researchgate.net/publication/316281181_Catalog_of_Window_Taper_Functions_for_Sidelobe_Control' target="_blank">"Catalog of Window Taper Functions for Sidelobe Control" by Armin W. Doerry</a>.</li>
+		</ul>
 	</div>
 </body>
 </html>

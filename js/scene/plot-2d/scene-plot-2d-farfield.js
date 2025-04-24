@@ -1,7 +1,7 @@
 import {adjust_theta_phi} from "../../util.js";
-import {FarfieldSpherical, FarfieldUV, FarfieldLudwig3} from "../../phasedarray/farfield.js"
 import {ScenePlotABC} from "../scene-plot-abc.js"
-import {SceneControlFarfieldDomain} from "../../index-scenes.js"
+/** @import { FarfieldHint } from "../../phasedarray/farfield.js" */
+/** @import { SceneControlFarfieldDomain } from "../../index-scenes.js" */
 
 const CANVAS_SCALER = 7000;
 export class ScenePlotFarfield2D extends ScenePlotABC{
@@ -28,7 +28,7 @@ export class ScenePlotFarfield2D extends ScenePlotABC{
 	/**
 	* Load farfield object.
 	*
-	* @param {FarfieldSpherical | FarfieldUV | FarfieldLudwig3} ff
+	* @param {FarfieldHint} ff
 	*
 	* @return {null}
 	* */

@@ -1,11 +1,11 @@
 import {ones, normalize, zeros} from "../util.js";
-import {Geometry} from "./geometry.js";
+/** @import { GeometryHint } from "./geometry.js" */
 
 export class PhasedArray{
 	/**
 	* Create a Phased Array object.
 	*
-	* @param {Geometry} geometry
+	* @param {GeometryHint} geometry
 	* */
 	constructor(geometry){
 		this.geometry = geometry;

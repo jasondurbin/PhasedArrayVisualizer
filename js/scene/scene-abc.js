@@ -1,4 +1,3 @@
-
 import {MeshColormapControl} from "../cmap/cmap-mesh.js";
 import {ListedColormapControl} from "../cmap/cmap-listed.js";
 import {SceneQueue} from "./scene-queue.js";

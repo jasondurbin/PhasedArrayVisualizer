@@ -1,5 +1,6 @@
-import {ColormapControl} from "../cmap/cmap-util.js"
-import {SceneParent, SceneObjectABC} from "./scene-abc.js"
+import {SceneObjectABC} from "./scene-abc.js"
+/** @import { ColormapControl } from "../cmap/cmap-util.js" */
+/** @import { SceneParent } from "./scene-abc.js" */
 
 export class ScenePlotABC extends SceneObjectABC{
 	/**

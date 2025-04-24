@@ -1,5 +1,9 @@
 import {linspace} from "../util.js";
 
+/**
+ * @typedef {FarfieldSpherical | FarfieldUV | FarfieldLudwig3} FarfieldHint
+ */
+
 export class FarfieldABC{
 	static args = ['farfield-ax1-points', 'farfield-ax2-points'];
 	static controls = {

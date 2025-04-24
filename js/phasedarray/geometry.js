@@ -1,5 +1,9 @@
 import {linspace} from "../util.js";
 
+/**
+ * @typedef {Geometry} GeometryHint
+ */
+
 export class Geometry{
 	static args = [];
 	static controls = {

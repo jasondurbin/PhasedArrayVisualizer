@@ -1,5 +1,4 @@
 import {SceneControl, SceneControlWithSelector, SceneControlWithSelectorAutoBuild, SceneParent} from "./scene/scene-abc.js";
-import {SceneQueue} from "./scene/scene-queue.js";
 import {FindSceneURL} from "./scene/scene-util.js";
 import {ScenePlot1D} from "./scene/plot-1d/scene-plot-1d.js";
 import {Geometries} from "./phasedarray/geometry.js";
@@ -8,6 +7,7 @@ import {FarfieldDomains} from "./phasedarray/farfield.js"
 import {SteeringDomains} from "./phasedarray/steering.js"
 import {Tapers} from "./phasedarray/tapers.js"
 import {linspace} from "./util.js";
+/** @import { SceneQueue } from "./scene/scene-queue.js" */
 
 export class SceneControlGeometry extends SceneControlWithSelectorAutoBuild{
 	static autoUpdateURL = false;

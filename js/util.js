@@ -1,5 +1,5 @@
-const c_deg2rad = Math.PI/180;
-const c_rad2deg = 180/Math.PI;
+export const c_deg2rad = Math.PI/180;
+export const c_rad2deg = 180/Math.PI;
 
 /**
  * Convert input radians to degrees.

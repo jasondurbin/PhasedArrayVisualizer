@@ -1,7 +1,6 @@
-
 import {ScenePlotABC} from "../scene-plot-abc.js"
-import {SceneControlPhasedArray} from "../../index-scenes.js"
-import {PhasedArray} from "../../phasedarray/phasedarray.js";
+/** @import { SceneControlPhasedArray } from "../../index-scenes.js"*/
+/** @import { PhasedArray } from "../../phasedarray/phasedarray.js"*/
 
 export class ScenePlot2DGeometryABC extends ScenePlotABC{
 	constructor(parent, canvas, cmapKey, defaultCMAP, strokeColor){

@@ -59,7 +59,6 @@ export class FarfieldCutEngineABC{
 }
 
 export class FarfieldCutEngineSpherical extends FarfieldCutEngineABC{
-
 	create_grid(){
 		this.parent.reset();
 		this.parent.set_xlabel('Theta (deg)');
@@ -83,7 +82,6 @@ export class FarfieldCutEngineSpherical extends FarfieldCutEngineABC{
 }
 
 export class FarfieldCutEngineUV extends FarfieldCutEngineABC{
-
 	create_grid(){
 		this.parent.reset();
 		this.parent.set_xlabel('u/v');
@@ -120,7 +118,6 @@ export class FarfieldCutEngineUV extends FarfieldCutEngineABC{
 }
 
 export class FarfieldCutEngineLudwig3 extends FarfieldCutEngineABC{
-
 	create_grid(){
 		this.parent.reset();
 		this.parent.set_xlabel('Az/El (deg)');

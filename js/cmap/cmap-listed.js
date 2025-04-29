@@ -50,7 +50,7 @@ function _array_wrapper(colors, reverse){
 	return (value) => {
 		if (isNaN(value)) return `rgb(0,0,0)`
 		if (!isFinite(value)) return `rgb(0,0,0)`
-		if (reverse) value = colors.length - value;
+		if (reverse) value = colors.length - value - 1;
 		return colors[value % colors.length];
 	}
 }

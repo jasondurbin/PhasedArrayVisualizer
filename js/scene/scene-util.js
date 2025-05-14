@@ -222,6 +222,7 @@ export class ScenePopup{
 		this.parent = parent;
 		const ele = document.createElement("div");
 		const form = document.createElement("form");
+		form.setAttribute('novalidate', 'novalidate');
 		ele.classList = "popup";
 		let h = document.createElement("h3");
 		h.innerHTML = title;

@@ -283,8 +283,9 @@ export class ScenePlot2DGeometryAtten extends ScenePlot2DGeometryABC{
 			'label': `Manual Attenuation (dB)`,
 			'type': 'number',
 			'min': -100,
-			'max': 0,
+			'max': 100,
 			'id': 'value',
+			'step': 'none',
 			'value': 0,
 			'focus': true,
 		},{

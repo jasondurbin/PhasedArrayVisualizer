@@ -4,7 +4,7 @@ import {ScenePlotABC} from "../scene-plot-abc.js"
 
 export class ScenePlot1D extends ScenePlotABC{
 	constructor(parent, canvas, cmapKey){
-		let cmap = parent.create_listed_colormap_selector(cmapKey);
+		let cmap = parent.create_listed_colormap_selector(cmapKey, undefined, false);
 		super(parent, canvas, cmap);
 		this.reset();
 		canvas.width = canvas.width*this.scale;

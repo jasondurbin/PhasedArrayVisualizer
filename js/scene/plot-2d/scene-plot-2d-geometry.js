@@ -6,7 +6,7 @@ export class ScenePlot2DGeometryABC extends ScenePlotABC{
 	constructor(parent, canvas, cmapKey, defaultCMAP, strokeColor){
 		if (defaultCMAP === undefined) defaultCMAP = 'viridis';
 		if (strokeColor === undefined) strokeColor = 'black'
-		let cmap = parent.create_mesh_colormap_selector(cmapKey, defaultCMAP);
+		let cmap = parent.create_mesh_colormap_selector(cmapKey, defaultCMAP, false);
 		super(parent, canvas, cmap);
 		this.strokeColor = strokeColor;
 		this.cmap.addEventListener('change', () => {this.build_queue();})
@@ -203,6 +203,8 @@ export class ScenePlot2DGeometryPhase extends ScenePlot2DGeometryABC{
 		this.max = max;
 		this.install_hover_item((i) => `${(this.pa.vectorPhase[i]*180/Math.PI).toFixed(2)} deg`);
 		this._needsRescale = false;
+	}
+	install_manual_control(){
 		this.install_popup('Phase', [{
 			'label': `Manual Phase (deg)`,
 			'type': 'number',
@@ -279,6 +281,8 @@ export class ScenePlot2DGeometryAtten extends ScenePlot2DGeometryABC{
 		this.install_hover_item((i) => `${this.pa.vectorAtten[i].toFixed(2)} dB`);
 		this.addEventListener('data-min-changed', () => {this.build_queue(true);})
 		this._needsRescale = true;
+	}
+	install_manual_control(){
 		this.install_popup('Attenuation', [{
 			'label': `Manual Attenuation (dB)`,
 			'type': 'number',

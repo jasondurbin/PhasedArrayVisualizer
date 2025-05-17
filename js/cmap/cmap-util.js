@@ -1,30 +1,37 @@
+import {FindSceneTheme} from "../scene/scene-util.js";
+
 export class ColormapControl{
 	constructor(selector, defaultSelection){
 		this.changed = true;
 		this.selector = selector;
-		if (defaultSelection === undefined) defaultSelection = 'viridis';
+		if (defaultSelection === undefined) defaultSelection = this.constructor.Colormaps[0];
 		this.defaultSelection = defaultSelection;
-		this.constructor.Colormaps.forEach((cm) => {
-			const ele = document.createElement('option');
-			ele.value = cm;
-			ele.innerHTML = cm;
-			selector.appendChild(ele);
-			if (defaultSelection == cm) ele.selected = true;
-		});
-		selector.addEventListener('change', () => {
-			this.changed = true;
-		});
-		window.installThemeChanged(() => {
-			this.changed = true;
-		});
+		if (selector){
+			this.constructor.Colormaps.forEach((cm) => {
+				const ele = document.createElement('option');
+				ele.value = cm;
+				ele.innerHTML = cm;
+				selector.appendChild(ele);
+				if (defaultSelection == cm) ele.selected = true;
+			});
+			selector.addEventListener('change', () => {
+				this.changed = true;
+			});
+		}
+		FindSceneTheme().add_listener(() => {this.changed = true;});
 	}
-	addEventListener(e, callback){ this.selector.addEventListener(e, callback); }
+	addEventListener(e, callback){
+		if (this.selector === null) return;
+		this.selector.addEventListener(e, callback);
+	}
 	cmap(){
-		const cms = this.constructor.Colormaps;
 		const find_colormap = this.constructor.find_colormap;
-		for (let i = 0; i < cms.length; i++)
-			if (this.selector[i].selected)
-				return find_colormap(cms[i]);
+		if (this.selector){
+			const cms = this.constructor.Colormaps;
+			for (let i = 0; i < cms.length; i++)
+				if (this.selector[i].selected)
+					return find_colormap(cms[i]);
+		}
 		return find_colormap(this.defaultSelection);
 	}
 }

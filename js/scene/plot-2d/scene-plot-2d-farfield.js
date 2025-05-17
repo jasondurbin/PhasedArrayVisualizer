@@ -6,7 +6,7 @@ import {ScenePlotABC} from "../scene-plot-abc.js"
 const CANVAS_SCALER = 7000;
 export class ScenePlotFarfield2D extends ScenePlotABC{
 	constructor(parent, canvas, cmapKey){
-		let cmap = parent.create_mesh_colormap_selector(cmapKey, 'viridis');
+		let cmap = parent.create_mesh_colormap_selector(cmapKey, 'viridis', false);
 		super(parent, canvas, cmap);
 		this.add_event_types('data-min-changed');
 		canvas.addEventListener('mousemove', (e) => {
@@ -56,7 +56,8 @@ export class ScenePlotFarfield2D extends ScenePlotABC{
 	}
 	rescale(){
 		if (!this.isValid) return;
-		const logMin = -this.min;
+		let logMin = 40;
+		if (this.min !== undefined) logMin = -this.min;
 		const ff = this.ff
 		const [p1, p2] = ff.meshPoints;
 		this.farfield_log_scale = new Array(p2);

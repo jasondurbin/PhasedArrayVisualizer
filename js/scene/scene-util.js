@@ -1,31 +1,48 @@
+
+/**
+* Attempt to find the Scene them controller.
+*
+* @return {SceneTheme}
+* */
+export function FindSceneTheme(){
+	if (window.SceneTheme === undefined){
+		const theme = new SceneTheme();
+		window.SceneTheme = theme;
+		return theme;
+	}
+	return window.SceneTheme;
+}
+
 export class SceneTheme{
 	constructor(){
 		const ttg = document.querySelector('.theme-toggle');
-		const _callbacks = [];
-		ttg.addEventListener('click', () => {
-			if (ttg.innerHTML.includes('dark')) {
-				document.documentElement.classList.remove('dark');
-				document.documentElement.classList.remove('auto');
-				document.documentElement.classList.add('light');
-				ttg.innerHTML = 'light';
-			}
-			else if (ttg.innerHTML.includes('light')) {
-				document.documentElement.classList.remove('dark');
-				document.documentElement.classList.add('auto');
-				document.documentElement.classList.remove('light');
-				ttg.innerHTML = 'auto';
-			}
-			else {
-				document.documentElement.classList.add('dark');
-				document.documentElement.classList.remove('auto');
-				document.documentElement.classList.remove('light');
-				ttg.innerHTML = 'dark';
-			}
-			for (let i = 0; i < _callbacks.length; i++) _callbacks[i](ttg.innerHTML);
-		});
-		const _install = (cb) => {_callbacks.push(cb);}
-		window.installThemeChanged = _install;
-		this.installChanged = _install;
+		this._callbacks = [];
+		if (ttg !== null){
+			ttg.addEventListener('click', () => {
+				if (ttg.innerHTML.includes('dark')) {
+					document.documentElement.classList.remove('dark');
+					document.documentElement.classList.remove('auto');
+					document.documentElement.classList.add('light');
+					ttg.innerHTML = 'light';
+				}
+				else if (ttg.innerHTML.includes('light')) {
+					document.documentElement.classList.remove('dark');
+					document.documentElement.classList.add('auto');
+					document.documentElement.classList.remove('light');
+					ttg.innerHTML = 'auto';
+				}
+				else {
+					document.documentElement.classList.add('dark');
+					document.documentElement.classList.remove('auto');
+					document.documentElement.classList.remove('light');
+					ttg.innerHTML = 'dark';
+				}
+				for (let i = 0; i < this._callbacks.length; i++) this._callbacks[i](ttg.innerHTML);
+			});
+		}
+	}
+	add_listener(cb){
+		this._callbacks.push(cb);
 	}
 }
 
@@ -34,7 +51,6 @@ export class SceneTheme{
 *
 * @return {SceneURL}
 * */
-
 export function FindSceneURL(){
 	if (window.SceneURL === undefined){
 		const url = new SceneURL();
@@ -48,10 +64,11 @@ export class SceneURL{
 	constructor(){
 		this.url = new URL(window.location);
 		this.url.search = this.url.searchParams;
+		this.disabled = false;
 		this._known = []
 		this._needsUpdate = true;
 		const _url_checker = () => {
-			if (this._needsUpdate){
+			if (this._needsUpdate && !this.disabled){
 				history.replaceState({}, null, this.url);
 				this._needsUpdate = false;
 			}
@@ -156,6 +173,7 @@ export class SceneURL{
 }
 
 export function element_saveable(ele){
+	if (!ele) return false;
 	return ['SELECT', 'OPTION', 'INPUT'].includes(ele.nodeName)
 }
 

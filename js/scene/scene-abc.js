@@ -1,7 +1,7 @@
 import {MeshColormapControl} from "../cmap/cmap-mesh.js";
 import {ListedColormapControl} from "../cmap/cmap-listed.js";
 import {SceneQueue} from "./scene-queue.js";
-import {ScenePopup, FindSceneURL} from "./scene-util.js";
+import {ScenePopup, FindSceneURL, FindSceneTheme} from "./scene-util.js";
 
 export class SceneObjectParameterMap{
 	/**
@@ -11,8 +11,10 @@ export class SceneObjectParameterMap{
 	* @param {String} skey Wrapped key (includes prepend)
 	* @param {String} okey Original key (key as it appears in class)
 	* @param {Object} cDict Control settings from class
+	* @param {(k: String) => Boolean} [filter_visible] Show control be visible? Defaults to always true.
+	* @param {(k: String) => Any} [filter_default_value] Should the default value be anything different?
 	* */
-	constructor(parent, skey, okey, cDict){
+	constructor(parent, skey, okey, cDict, filter_visible, filter_default_value){
 		this.parent = parent;
 		this.skey = skey;
 		this.okey = okey;
@@ -28,13 +30,25 @@ export class SceneObjectParameterMap{
 		this.label = document.querySelector("label[for='" + this.ele.id + "']");
 		this.div = document.querySelector("#" + this.ele.id + "-div");
 		if (!('default' in cDict)) throw Error("Missing 'default'.");
-		this.default = cDict['default'];
+		let d = undefined
+		if (filter_default_value !== undefined) d = filter_default_value(okey);
+		if (d === undefined) d = cDict['default'];
+
+		this.default = d;
+
 		this.last = this.default;
 		this.title = cDict['title'];
 		this.deactivate();
 		if (this.div !== null){
+			if (filter_visible !== undefined && ! filter_visible(okey)){
+				this.div.classList.add('always-hidden');
+				this.div.style.display = 'none';
+			}
 			this.hide = () => {this.div.style.display = "none";};
-			this.show = () => {this.div.style.display = "flex";};
+			this.show = () => {
+				if (this.div.classList.contains('always-hidden')) return;
+				this.div.style.display = "flex";
+			};
 		}
 		else{
 			this.hide = () => {};
@@ -81,6 +95,7 @@ export class SceneObjectABC{
 			if (this.constructor.autoUpdateURL !== undefined) autoUpdateURL = this.constructor.autoUpdateURL;
 			else autoUpdateURL = true;
 		}
+		FindSceneTheme();
 		this.autoUpdateURL = autoUpdateURL;
 		this.prepend = prepend;
 		this.colormap = {};
@@ -150,13 +165,31 @@ export class SceneObjectABC{
 		return ele;
 	}
 	find_elements(elements){ elements.forEach((x) => {this.find_element(x)}); }
-	create_mesh_colormap_selector(key, defaultSelection){
-		const cm = new MeshColormapControl(this.find_element(key), defaultSelection);
+	/**
+	* Create a mesh colormap selector
+	*
+	* @param {String} key Element's ID
+	* @param {String} defaultSelection Default selection of the colormap.
+	* @param {Boolean} [allowError=true] Throw error if not found? Default=true.
+	*
+	* @return {MeshColormapControl}
+	* */
+	create_mesh_colormap_selector(key, defaultSelection, allowError){
+		const cm = new MeshColormapControl(this.find_element(key, allowError), defaultSelection);
 		this.colormap[key] = cm;
 		return cm;
 	}
-	create_listed_colormap_selector(key, defaultSelection){
-		const cm = new ListedColormapControl(this.find_element(key), defaultSelection);
+	/**
+	* Create a mesh colormap selector
+	*
+	* @param {String} key Element's ID
+	* @param {String} defaultSelection Default selection of the colormap.
+	* @param {Boolean} [allowError=true] Throw error if not found? Default=true.
+	*
+	* @return {MeshColormapControl}
+	* */
+	create_listed_colormap_selector(key, defaultSelection, allowError){
+		const cm = new ListedColormapControl(this.find_element(key, allowError), defaultSelection);
 		this.colormap[key] = cm;
 		return cm;
 	}
@@ -203,6 +236,15 @@ export class SceneObjectABC{
 	}
 	children(){ return this._children; }
 	reset_all(){ this.trigger_event('reset'); }
+	merge_config(inputConfig, defaultConfig){
+		if (inputConfig === undefined) inputConfig = {};
+		const config = {};
+		for (const [k, v] of Object.entries(defaultConfig)){
+			if (inputConfig.hasOwnProperty(k)) config[k] = inputConfig[k];
+			else config[k] = v;
+		}
+		return config;
+	}
 }
 
 export class SceneParent extends SceneObjectABC{
@@ -284,7 +326,7 @@ export class SceneControl extends SceneObjectABC{
 }
 
 export class SceneControlWithSelector extends SceneControl{
-	constructor(parent, primaryKey, classes, prepend, autoUpdateURL){
+	constructor(parent, primaryKey, classes, prepend, autoUpdateURL, filter_visible, filter_default_value){
 		let keys = new Set([primaryKey]);
 		classes.forEach((kls) => {
 			keys = keys.union(new Set(Object.keys(kls.controls)));
@@ -328,7 +370,7 @@ export class SceneControlWithSelector extends SceneControl{
 				let smap;
 				if (!(this.mapKey in v)){
 					v[this.mapKey] = this.objPars.length;
-					smap = new SceneObjectParameterMap(this, kk, k, v);
+					smap = new SceneObjectParameterMap(this, kk, k, v, filter_visible, filter_default_value);
 					this.objPars.push(smap);
 				}
 				else smap = this.objPars[v[this.mapKey]]
@@ -405,7 +447,7 @@ export class SceneControlWithSelector extends SceneControl{
 }
 
 export class SceneControlWithSelectorAutoBuild extends SceneControlWithSelector{
-	constructor(parent, primaryKey, classes, htmlElement, prepend){
+	constructor(parent, primaryKey, classes, htmlElement, prepend, autoUpdateURL, filter_visible, filter_default_value){
 		let keys = new Set([primaryKey]);
 
 		classes.forEach((kls) => {
@@ -442,7 +484,6 @@ export class SceneControlWithSelectorAutoBuild extends SceneControlWithSelector{
 			div.appendChild(ele);
 			htmlElement.appendChild(div);
 		});
-
-		super(parent, primaryKey, classes, prepend);
+		super(parent, primaryKey, classes, prepend, autoUpdateURL, filter_visible, filter_default_value);
 	}
 }

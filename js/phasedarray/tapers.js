@@ -3,6 +3,8 @@
 *
 * Many of these functions are from:
 * https://www.researchgate.net/publication/316281181_Catalog_of_Window_Taper_Functions_for_Sidelobe_Control
+*
+* @typedef {Uniform} TaperAny
 * */
 import {bessel_modified_0, linspace, normalize, ones} from "../util.js";
 
